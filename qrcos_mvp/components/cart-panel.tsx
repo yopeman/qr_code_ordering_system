@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   DELIVERY_FEE,
   FREE_DELIVERY_THRESHOLD,
@@ -20,6 +23,37 @@ export function CartPanel({
   onDecrement: (id: string) => void;
   onClear: () => void;
 }) {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
+  const [error, setError] = useState("");
+
+  const placeOrder = async () => {
+    if (lines.length === 0) return;
+    setStatus("sending");
+    setError("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "Table 12",
+          lines: lines.map((line) => ({
+            id: line.dish.id,
+            quantity: line.quantity,
+          })),
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Order failed");
+      setStatus("sent");
+      onClear();
+    } catch (cause) {
+      setStatus("error");
+      setError(cause instanceof Error ? cause.message : "Order failed");
+    }
+  };
+
   const subtotal = lines.reduce(
     (sum, line) => sum + line.dish.price * line.quantity,
     0,
@@ -123,13 +157,27 @@ export function CartPanel({
           </span>
         </div>
         <button
-          disabled={lines.length === 0}
+          onClick={placeOrder}
+          disabled={lines.length === 0 || status === "sending"}
           className="mt-4 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 dark:bg-emerald-600 dark:text-stone-950 dark:hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 dark:disabled:bg-stone-800 dark:disabled:text-stone-500"
         >
-          {lines.length === 0 ? "Add items to continue" : "Place order"}
+          {lines.length === 0
+            ? "Add items to continue"
+            : status === "sending"
+              ? "Sending to kitchen…"
+              : status === "sent"
+                ? "Order sent ✓"
+                : "Place order"}
         </button>
+        {status === "error" && (
+          <p className="mt-2 text-center text-[11px] font-medium text-rose-500">
+            {error}
+          </p>
+        )}
         <p className="mt-2 text-center text-[11px] text-stone-400 dark:text-stone-500">
-          Demo UI — no order is sent
+          {status === "sent"
+            ? "The kitchen has your order"
+            : "Sent to the kitchen via Telegram"}
         </p>
       </div>
     </aside>
