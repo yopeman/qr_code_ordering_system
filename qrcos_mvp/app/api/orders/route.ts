@@ -1,66 +1,32 @@
 import { NextResponse } from "next/server";
-import { formatPrice, MENU, type Dish } from "@/lib/menu";
+import {
+  buildKeyboard,
+  buildMessage,
+  ORDER_STATUSES,
+  type OrderLine,
+  type OrderStatus,
+} from "@/lib/orders";
 
-type OrderLine = { id: string; quantity: number };
-
-type OrderPayload = {
-  table?: string;
-  customer?: string;
-  notes?: string;
-  lines?: OrderLine[];
-};
-
-const escapeHtml = (value: string) =>
-  value.replace(/[&<>"']/g, (char) =>
-    ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    })[char]!,
-  );
-
-function buildMessage(
-  lines: OrderLine[],
-  table: string,
-  customer: string,
-  notes: string,
+async function telegram(
+  method: string,
+  body: Record<string, unknown>,
+  token: string,
 ) {
-  const dishes = new Map<string, Dish>(MENU.map((dish) => [dish.id, dish]));
-
-  const items = lines
-    .map((line) => {
-      const dish = dishes.get(line.id);
-      if (!dish) return null;
-      return `• ${escapeHtml(dish.name)} × ${line.quantity} — ${formatPrice(
-        dish.price * line.quantity,
-      )}`;
-    })
-    .filter(Boolean)
-    .join("\n");
-
-  const subtotal = lines.reduce((sum, line) => {
-    const dish = dishes.get(line.id);
-    return dish ? sum + dish.price * line.quantity : sum;
-  }, 0);
-  const service = subtotal * 0.08;
-  const tax = subtotal * 0.09;
-
-  return [
-    `🧾 <b>New order</b> · ${escapeHtml(table)}`,
-    customer ? `👤 ${escapeHtml(customer)}` : "",
-    "",
-    items || "No items",
-    "",
-    `Subtotal: ${formatPrice(subtotal)}`,
-    `Service fee: ${formatPrice(service)}`,
-    `Tax: ${formatPrice(tax)}`,
-    `<b>Total: ${formatPrice(subtotal + service + tax)}</b>`,
-    notes ? `\n📝 ${escapeHtml(notes)}` : "",
-  ]
-    .filter((part) => part !== "")
-    .join("\n");
+  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  const data = (await response.json()) as {
+    ok?: boolean;
+    result?: { message_id?: number };
+    description?: string;
+  };
+  if (!response.ok || !data.ok) {
+    throw new Error(data.description ?? `Telegram ${method} failed`);
+  }
+  return data.result;
 }
 
 export async function POST(request: Request) {
@@ -74,57 +40,118 @@ export async function POST(request: Request) {
     );
   }
 
-  let payload: OrderPayload;
+  let payload: {
+    table?: string;
+    customer?: string;
+    notes?: string;
+    lines?: OrderLine[];
+  };
   try {
-    payload = (await request.json()) as OrderPayload;
+    payload = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const lines = (payload.lines ?? []).filter(
-    (line) => line.id && line.quantity > 0,
-  );
+  const lines = (payload.lines ?? []).filter((line) => line.id && line.quantity > 0);
   if (lines.length === 0) {
     return NextResponse.json({ error: "Your basket is empty." }, { status: 400 });
   }
 
-  const text = buildMessage(
+  const text = buildMessage({
     lines,
-    payload.table?.trim() || "Table 12",
-    payload.customer?.trim() || "Guest",
-    payload.notes?.trim() || "",
-  );
+    table: payload.table?.trim() || "Table 12",
+    customer: payload.customer?.trim() || "Guest",
+    notes: payload.notes?.trim() || "",
+    status: "pending",
+  });
 
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${token}/sendMessage`,
+    const message = await telegram(
+      "sendMessage",
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: channel,
-          text,
-          parse_mode: "HTML",
-        }),
-        cache: "no-store",
+        chat_id: channel,
+        text,
+        parse_mode: "HTML",
+        reply_markup: buildKeyboard("pending"),
       },
+      token,
     );
-    const data = (await response.json()) as {
-      ok?: boolean;
-      description?: string;
-    };
-
-    if (!response.ok || !data.ok) {
-      return NextResponse.json(
-        { error: data.description ?? "Telegram rejected the message." },
-        { status: 502 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch {
+    return NextResponse.json({ ok: true, messageId: message?.message_id ?? null });
+  } catch (cause) {
     return NextResponse.json(
-      { error: "Could not reach Telegram." },
+      {
+        error:
+          cause instanceof Error ? cause.message : "Could not reach Telegram.",
+      },
+      { status: 502 },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const channel = process.env.TELEGRAM_CHANNEL;
+  if (!token || !channel) {
+    return NextResponse.json(
+      { error: "Telegram is not configured on the server." },
+      { status: 500 },
+    );
+  }
+
+  let payload: {
+    messageId?: number;
+    status?: string;
+    table?: string;
+    customer?: string;
+    notes?: string;
+    lines?: OrderLine[];
+  };
+  try {
+    payload = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  const { messageId, status } = payload;
+  if (!messageId) {
+    return NextResponse.json({ error: "messageId is required." }, { status: 400 });
+  }
+  if (!ORDER_STATUSES.includes(status as OrderStatus)) {
+    return NextResponse.json({ error: "Unknown status." }, { status: 400 });
+  }
+
+  const lines = (payload.lines ?? []).filter((line) => line.id && line.quantity > 0);
+  if (lines.length === 0) {
+    return NextResponse.json({ error: "Order lines are required." }, { status: 400 });
+  }
+
+  const text = buildMessage({
+    lines,
+    table: payload.table?.trim() || "Table 12",
+    customer: payload.customer?.trim() || "Guest",
+    notes: payload.notes?.trim() || "",
+    status: status as OrderStatus,
+  });
+
+  try {
+    await telegram(
+      "editMessageText",
+      {
+        chat_id: channel,
+        message_id: messageId,
+        text,
+        parse_mode: "HTML",
+        reply_markup: buildKeyboard(status as OrderStatus),
+      },
+      token,
+    );
+    return NextResponse.json({ ok: true });
+  } catch (cause) {
+    return NextResponse.json(
+      {
+        error:
+          cause instanceof Error ? cause.message : "Could not reach Telegram.",
+      },
       { status: 502 },
     );
   }

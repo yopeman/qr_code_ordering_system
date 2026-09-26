@@ -9,6 +9,12 @@ import {
   type Dish,
   formatPrice,
 } from "@/lib/menu";
+import {
+  ORDER_STATUSES,
+  STATUS_BUTTONS,
+  type OrderLine,
+  type OrderStatus,
+} from "@/lib/orders";
 
 export type CartLine = { dish: Dish; quantity: number };
 
@@ -27,25 +33,33 @@ export function CartPanel({
     "idle",
   );
   const [error, setError] = useState("");
+  const [kitchenStatus, setKitchenStatus] = useState<OrderStatus | null>(null);
+  const [pendingLines, setPendingLines] = useState<OrderLine[] | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [messageId, setMessageId] = useState<number | null>(null);
 
   const placeOrder = async () => {
     if (lines.length === 0) return;
+    const payload = {
+      table: "Table 12",
+      lines: lines.map((line) => ({ id: line.dish.id, quantity: line.quantity })),
+    };
     setStatus("sending");
     setError("");
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          table: "Table 12",
-          lines: lines.map((line) => ({
-            id: line.dish.id,
-            quantity: line.quantity,
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        messageId?: number | null;
+      };
       if (!response.ok) throw new Error(data.error ?? "Order failed");
+      setPendingLines(payload.lines);
+      setMessageId(data.messageId ?? null);
+      setKitchenStatus("pending");
       setStatus("sent");
       onClear();
     } catch (cause) {
@@ -63,6 +77,31 @@ export function CartPanel({
   const tax = subtotal * TAX_RATE;
   const total = subtotal + delivery + service + tax;
   const toFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
+
+  const updateStatus = async (next: OrderStatus) => {
+    if (!messageId || !pendingLines) return;
+    setUpdatingStatus(true);
+    setError("");
+    try {
+      const response = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId,
+          status: next,
+          table: "Table 12",
+          lines: pendingLines,
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Update failed");
+      setKitchenStatus(next);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Update failed");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   return (
     <aside className="sticky top-24 flex max-h-[calc(100vh-7rem)] flex-col rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/5 dark:border-stone-800 dark:bg-stone-900">
@@ -169,6 +208,33 @@ export function CartPanel({
                 ? "Order sent ✓"
                 : "Place order"}
         </button>
+        {kitchenStatus && (
+          <div className="mt-3 rounded-xl bg-stone-100 p-2 dark:bg-stone-800">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+              Kitchen status
+            </p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {ORDER_STATUSES.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => updateStatus(option)}
+                  disabled={updatingStatus}
+                  aria-pressed={kitchenStatus === option}
+                  className={`rounded-lg px-1 py-1.5 text-[11px] font-semibold transition disabled:opacity-50 ${
+                    kitchenStatus === option
+                      ? "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-stone-950"
+                      : "bg-white text-stone-600 hover:bg-emerald-50 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                  }`}
+                >
+                  {STATUS_BUTTONS[option]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[10px] text-stone-400 dark:text-stone-500">
+              The same buttons are on the Telegram message
+            </p>
+          </div>
+        )}
         {status === "error" && (
           <p className="mt-2 text-center text-[11px] font-medium text-rose-500">
             {error}

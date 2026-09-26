@@ -34,3 +34,34 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Telegram kitchen orders
+
+The order panel posts to `/api/orders`, which forwards the receipt to a Telegram
+channel using the bot token from `.env` (never exposed to the browser).
+
+Required variables in `.env`:
+
+```
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHANNEL=@your_channel
+TELEGRAM_WEBHOOK_SECRET=some_secret   # optional, validates webhook calls
+```
+
+Each order message carries inline buttons — Pending, Preparing, Completed — and
+the status line in the message updates as they are pressed.
+
+Two ways the status can change:
+
+1. From the UI: the "Kitchen status" switcher under *Place order* calls
+   `PATCH /api/orders`, which edits the Telegram message. Works locally.
+2. From Telegram itself: press a button and the bot needs a webhook that
+   receives `callback_query` updates. Register it once against a public URL:
+
+   ```
+   PUBLIC_URL=https://your-domain.com npm run telegram:webhook
+   ```
+
+Without a webhook, button presses reach the bot but nothing answers them, so
+use the UI switcher (or run behind a tunnel such as `cloudflared tunnel` /
+`ngrok http 3000` and register that URL).
