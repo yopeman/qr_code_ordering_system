@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DELIVERY_FEE,
   FREE_DELIVERY_THRESHOLD,
@@ -18,17 +18,120 @@ import {
 
 export type CartLine = { dish: Dish; quantity: number };
 
-export function CartPanel({
-  lines,
-  onIncrement,
-  onDecrement,
-  onClear,
-}: {
+type CartPanelProps = {
   lines: CartLine[];
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
   onClear: () => void;
-}) {
+};
+
+export function CartPanel(props: CartPanelProps) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  const itemCount = props.lines.reduce((n, line) => n + line.quantity, 0);
+  const subtotal = props.lines.reduce(
+    (sum, line) => sum + line.dish.price * line.quantity,
+    0,
+  );
+
+  return (
+    <>
+      <aside className="sticky top-24 hidden max-h-[calc(100vh-7rem)] lg:block">
+        <CartCard {...props} />
+      </aside>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-white/95 backdrop-blur lg:hidden dark:border-stone-800 dark:bg-stone-900/95">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button
+            onClick={() => setOpen(true)}
+            className="flex flex-1 items-center gap-3 rounded-xl bg-stone-100 px-3 py-2.5 text-left transition active:scale-[0.99] dark:bg-stone-800"
+          >
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-base dark:bg-emerald-500">
+              🧺
+              {itemCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white">
+                  {itemCount}
+                </span>
+              )}
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold text-stone-900 dark:text-stone-100">
+                {itemCount === 0
+                  ? "No items yet"
+                  : `${itemCount} item${itemCount === 1 ? "" : "s"}`}
+              </span>
+              <span className="block text-xs text-stone-500 dark:text-stone-400">
+                {itemCount === 0
+                  ? "Add a dish to start"
+                  : "Tap to view your order"}
+              </span>
+            </span>
+            <span className="text-sm font-bold text-stone-900 dark:text-stone-100">
+              {formatPrice(subtotal)}
+            </span>
+          </button>
+          <button
+            onClick={() => setOpen(true)}
+            disabled={itemCount === 0}
+            className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition active:scale-[0.98] disabled:bg-stone-200 disabled:text-stone-400 dark:bg-emerald-600 dark:text-stone-950 dark:disabled:bg-stone-800 dark:disabled:text-stone-500"
+          >
+            View
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end lg:hidden">
+          <button
+            aria-label="Close order"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Your order"
+            className="relative flex max-h-[88vh] w-full flex-col overflow-hidden rounded-t-3xl border border-stone-200 bg-white shadow-2xl dark:border-stone-800 dark:bg-stone-900"
+          >
+            <div className="flex items-center justify-between border-b border-stone-100 px-5 py-3 dark:border-stone-800">
+              <span className="h-1 w-10 rounded-full bg-stone-300 dark:bg-stone-700" />
+              <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+                Your Order
+              </span>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-sm font-bold text-stone-600 transition dark:bg-stone-800 dark:text-stone-200"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <CartCard {...props} floating onPlaced={() => setOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function CartCard({
+  lines,
+  onIncrement,
+  onDecrement,
+  onClear,
+  floating = false,
+  onPlaced,
+}: CartPanelProps & { floating?: boolean; onPlaced?: () => void }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle",
   );
@@ -37,13 +140,20 @@ export function CartPanel({
   const [pendingLines, setPendingLines] = useState<OrderLine[] | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [messageId, setMessageId] = useState<number | null>(null);
+  const orderLock = useRef(false);
+  const lastSignature = useRef<string | null>(null);
+  const statusLock = useRef(false);
 
   const placeOrder = async () => {
-    if (lines.length === 0) return;
+    if (lines.length === 0 || orderLock.current) return;
     const payload = {
       table: "Table 12",
       lines: lines.map((line) => ({ id: line.dish.id, quantity: line.quantity })),
     };
+    const signature = JSON.stringify(payload);
+    if (signature === lastSignature.current) return;
+
+    orderLock.current = true;
     setStatus("sending");
     setError("");
     try {
@@ -61,10 +171,14 @@ export function CartPanel({
       setMessageId(data.messageId ?? null);
       setKitchenStatus("pending");
       setStatus("sent");
+      lastSignature.current = signature;
       onClear();
+      onPlaced?.();
     } catch (cause) {
       setStatus("error");
       setError(cause instanceof Error ? cause.message : "Order failed");
+    } finally {
+      orderLock.current = false;
     }
   };
 
@@ -72,14 +186,17 @@ export function CartPanel({
     (sum, line) => sum + line.dish.price * line.quantity,
     0,
   );
-  const delivery = subtotal === 0 || subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+  const delivery =
+    subtotal === 0 || subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const service = subtotal * SERVICE_FEE_RATE;
   const tax = subtotal * TAX_RATE;
   const total = subtotal + delivery + service + tax;
   const toFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
 
   const updateStatus = async (next: OrderStatus) => {
-    if (!messageId || !pendingLines) return;
+    if (!messageId || !pendingLines || statusLock.current) return;
+    if (kitchenStatus === next) return;
+    statusLock.current = true;
     setUpdatingStatus(true);
     setError("");
     try {
@@ -99,31 +216,53 @@ export function CartPanel({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Update failed");
     } finally {
+      statusLock.current = false;
       setUpdatingStatus(false);
     }
   };
 
   return (
-    <aside className="sticky top-24 flex max-h-[calc(100vh-7rem)] flex-col rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/5 dark:border-stone-800 dark:bg-stone-900">
-      <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4 dark:border-stone-800">
-        <div>
-          <h2 className="font-semibold text-stone-900 dark:text-stone-100">Your Order</h2>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
-            {lines.reduce((n, l) => n + l.quantity, 0)} items · Table 12
-          </p>
+    <div
+      className={`flex flex-col overflow-hidden bg-white dark:bg-stone-900 ${
+        floating
+          ? "min-h-full"
+          : "max-h-[calc(100vh-7rem)] rounded-2xl border border-stone-200 shadow-xl shadow-stone-900/5 dark:border-stone-800"
+      }`}
+    >
+      {!floating && (
+        <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4 dark:border-stone-800">
+          <div>
+            <h2 className="font-semibold text-stone-900 dark:text-stone-100">
+              Your Order
+            </h2>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              {lines.reduce((n, l) => n + l.quantity, 0)} items · Table 12
+            </p>
+          </div>
+          {lines.length > 0 && (
+            <button
+              onClick={onClear}
+              className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
+            >
+              Clear
+            </button>
+          )}
         </div>
-        {lines.length > 0 && (
+      )}
+
+      {floating && lines.length > 0 && (
+        <div className="flex justify-end px-5 pt-3">
           <button
             onClick={onClear}
             className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
           >
-            Clear
+            Clear order
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {toFreeDelivery > 0 && subtotal > 0 && (
-        <div className="border-b border-stone-100 bg-amber-50 px-5 py-2.5 text-xs font-medium text-amber-800 dark:text-amber-200 dark:border-stone-800 dark:bg-amber-950/50 dark:text-amber-200">
+        <div className="border-b border-stone-100 bg-amber-50 px-5 py-2.5 text-xs font-medium text-amber-800 dark:border-stone-800 dark:bg-amber-950/50 dark:text-amber-200">
           Add {formatPrice(toFreeDelivery)} more for free delivery
         </div>
       )}
@@ -132,7 +271,9 @@ export function CartPanel({
         {lines.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center">
             <span className="text-4xl">🧺</span>
-            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">Your basket is empty</p>
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">
+              Your basket is empty
+            </p>
             <p className="text-xs text-stone-400">
               Tap “Add to order” to start your meal.
             </p>
@@ -154,7 +295,7 @@ export function CartPanel({
                   <button
                     onClick={() => onDecrement(dish.id)}
                     aria-label={`Remove one ${dish.name}`}
-                    className="h-7 w-7 rounded-md bg-white dark:bg-stone-700 text-sm font-bold text-stone-600 transition hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-200 dark:hover:bg-stone-600"
+                    className="h-7 w-7 rounded-md bg-white text-sm font-bold text-stone-600 transition hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-200 dark:hover:bg-stone-600"
                   >
                     −
                   </button>
@@ -164,7 +305,7 @@ export function CartPanel({
                   <button
                     onClick={() => onIncrement(dish.id)}
                     aria-label={`Add one ${dish.name}`}
-                    className="h-7 w-7 rounded-md bg-white dark:bg-stone-700 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50 dark:bg-stone-700 dark:text-emerald-300 dark:hover:bg-emerald-900"
+                    className="h-7 w-7 rounded-md bg-white text-sm font-bold text-emerald-700 transition hover:bg-emerald-50 dark:bg-stone-700 dark:text-emerald-300 dark:hover:bg-emerald-900"
                   >
                     +
                   </button>
@@ -189,8 +330,10 @@ export function CartPanel({
           <Row label="Service fee" value={formatPrice(service)} />
           <Row label="Tax" value={formatPrice(tax)} />
         </dl>
-        <div className="mt-3 flex items-baseline justify-between border-t border-dashed border-stone-200 pt-3">
-          <span className="font-semibold text-stone-900 dark:text-stone-100">Total</span>
+        <div className="mt-3 flex items-baseline justify-between border-t border-dashed border-stone-200 pt-3 dark:border-stone-700">
+          <span className="font-semibold text-stone-900 dark:text-stone-100">
+            Total
+          </span>
           <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
             {formatPrice(total)}
           </span>
@@ -198,6 +341,7 @@ export function CartPanel({
         <button
           onClick={placeOrder}
           disabled={lines.length === 0 || status === "sending"}
+          aria-busy={status === "sending"}
           className="mt-4 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 dark:bg-emerald-600 dark:text-stone-950 dark:hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 dark:disabled:bg-stone-800 dark:disabled:text-stone-500"
         >
           {lines.length === 0
@@ -218,7 +362,7 @@ export function CartPanel({
                 <button
                   key={option}
                   onClick={() => updateStatus(option)}
-                  disabled={updatingStatus}
+                  disabled={updatingStatus || kitchenStatus === option}
                   aria-pressed={kitchenStatus === option}
                   className={`rounded-lg px-1 py-1.5 text-[11px] font-semibold transition disabled:opacity-50 ${
                     kitchenStatus === option
@@ -246,7 +390,7 @@ export function CartPanel({
             : "Sent to the kitchen via Telegram"}
         </p>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -262,7 +406,13 @@ function Row({
   return (
     <div className="flex justify-between text-stone-500">
       <dt>{label}</dt>
-      <dd className={accent ? "font-semibold text-emerald-600" : "text-stone-700 dark:text-stone-200"}>
+      <dd
+        className={
+          accent
+            ? "font-semibold text-emerald-600"
+            : "text-stone-700 dark:text-stone-200"
+        }
+      >
         {value}
       </dd>
     </div>
