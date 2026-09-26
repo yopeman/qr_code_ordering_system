@@ -91,7 +91,7 @@ export default function Home() {
             </span>
             <div>
               <h1 className="text-lg font-bold leading-tight text-stone-900 dark:text-stone-100">
-                Verde Kitchen
+                Yope Kitchen
               </h1>
               <p className="text-xs text-stone-500 dark:text-stone-400">
                 Seasonal menu · Open until 22:30 · Prices in ETB
