@@ -17,6 +17,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Verde Kitchen · Menu",
   description: "Browse the seasonal menu and build your order at Verde Kitchen.",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "540x540" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
