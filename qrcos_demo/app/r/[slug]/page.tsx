@@ -3,6 +3,8 @@
 import React, { useState, useEffect, use } from "react";
 import { Modal } from "@/components/Modal";
 import { QRCodeModal } from "@/components/QRCodeModal";
+import { LogoUpload } from "@/components/LogoUpload";
+import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import {
   Store,
   UtensilsCrossed,
@@ -110,7 +112,7 @@ export default function RestaurantOwnerPage({
     logoUrl: "",
     telegramChat: "",
     detailsStr: "",
-    feesStr: "",
+    fees: [] as FeeItem[],
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
@@ -165,7 +167,11 @@ export default function RestaurantOwnerPage({
         setRestaurant(r);
 
         const detailsStr = (r.detail || []).map((d: any) => `${d.key}:${d.value}`).join(", ");
-        const feesStr = (r.config || []).map((c: any) => `${c.feeName}:${c.type}:${c.amount}`).join(", ");
+        const fees: FeeItem[] = (r.config || []).map((c: any) => ({
+          feeName: c.feeName,
+          type: c.type,
+          amount: c.amount,
+        }));
 
         setSettingsFormData({
           name: r.name || "",
@@ -173,7 +179,7 @@ export default function RestaurantOwnerPage({
           logoUrl: r.logoUrl || "",
           telegramChat: r.telegramChat || "",
           detailsStr,
-          feesStr,
+          fees,
         });
       }
 
@@ -494,22 +500,18 @@ export default function RestaurantOwnerPage({
       }
 
       // Parse fees
-      const config: any[] = [];
-      if (settingsFormData.feesStr.trim()) {
-        for (const f of settingsFormData.feesStr.split(",")) {
-          const [feeName, type, amount] = f.split(":").map((s) => s.trim());
-          if (feeName && (type === "percent" || type === "fixed") && !isNaN(Number(amount))) {
-            config.push({ feeName, type, amount: Number(amount) });
-          }
-        }
-      }
+      const config = (settingsFormData.fees || []).map((f) => ({
+        feeName: f.feeName.trim(),
+        type: f.type,
+        amount: parseFloat(String(f.amount)) || 0,
+      }));
 
       // Owner cannot modify status or expiredAt per spec
       const payload = {
         name: settingsFormData.name,
         description: settingsFormData.description,
         logoUrl: settingsFormData.logoUrl,
-        telegramChat: settingsFormData.telegramChat,
+        telegramChat: settingsFormData.telegramChat?.trim() || "",
         detail,
         config,
       };
@@ -1092,31 +1094,28 @@ export default function RestaurantOwnerPage({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Logo URL
-                </label>
-                <input
-                  type="url"
-                  value={settingsFormData.logoUrl}
-                  onChange={(e) => setSettingsFormData({ ...settingsFormData, logoUrl: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
+            {/* Logo Upload with Cloudinary Integration */}
+            <LogoUpload
+              value={settingsFormData.logoUrl}
+              onChange={(url) => setSettingsFormData((prev) => ({ ...prev, logoUrl: url }))}
+              folder="qrcos/restaurants"
+              label="Restaurant Logo (Cloudinary Upload)"
+            />
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Telegram Chat / Channel ID
-                </label>
-                <input
-                  type="text"
-                  value={settingsFormData.telegramChat}
-                  onChange={(e) => setSettingsFormData({ ...settingsFormData, telegramChat: e.target.value })}
-                  placeholder="@post_timir_content"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Telegram Chat / Channel ID (Optional)
+              </label>
+              <input
+                type="text"
+                value={settingsFormData.telegramChat}
+                onChange={(e) => setSettingsFormData({ ...settingsFormData, telegramChat: e.target.value })}
+                placeholder="e.g. @my_restaurant_orders (optional)"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">
+                Leave blank if you do not want kitchen ticket alerts sent to Telegram.
+              </p>
             </div>
 
             <div>
@@ -1132,20 +1131,12 @@ export default function RestaurantOwnerPage({
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Configured Fees & Taxes (name:type:amount, comma separated)
-              </label>
-              <input
-                type="text"
-                value={settingsFormData.feesStr}
-                onChange={(e) => setSettingsFormData({ ...settingsFormData, feesStr: e.target.value })}
-                placeholder="VAT:percent:15, Service Fee:fixed:2.5"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+            {/* Interactive Fee Config Form */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <FeeConfigBuilder
+                fees={settingsFormData.fees}
+                onChange={(fees) => setSettingsFormData((prev) => ({ ...prev, fees }))}
               />
-              <p className="text-[11px] text-slate-400 mt-1">
-                e.g. VAT:percent:15 calculates 15% VAT on subtotal. Service Fee:fixed:2.5 adds $2.50 flat.
-              </p>
             </div>
 
             <div className="pt-2">
@@ -1233,18 +1224,13 @@ export default function RestaurantOwnerPage({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Photo URL (or Unsplash / Cloudinary link)
-            </label>
-            <input
-              type="url"
-              value={menuFormData.imageUrl}
-              onChange={(e) => setMenuFormData({ ...menuFormData, imageUrl: e.target.value })}
-              placeholder="https://..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
+          {/* Dish Photo with Cloudinary Upload */}
+          <LogoUpload
+            value={menuFormData.imageUrl}
+            onChange={(url) => setMenuFormData({ ...menuFormData, imageUrl: url })}
+            folder="qrcos/dishes"
+            label="Dish Photo (Upload to Cloudinary or paste URL)"
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

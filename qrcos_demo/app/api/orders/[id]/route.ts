@@ -72,16 +72,13 @@ export async function PATCH(
 
     // Sync status change to Telegram message
     const restaurant = await Restaurant.findById(order.restaurantId);
-    if (restaurant && order.telegramMessageId) {
-      const channel = restaurant.telegramChat || process.env.TELEGRAM_CHANNEL;
-      if (channel) {
-        await updateTelegramOrderStatus(
-          channel,
-          order.telegramMessageId,
-          order,
-          restaurant.name
-        );
-      }
+    if (restaurant && order.telegramMessageId && restaurant.telegramChat?.trim()) {
+      await updateTelegramOrderStatus(
+        restaurant.telegramChat.trim(),
+        order.telegramMessageId,
+        order,
+        restaurant.name
+      );
     }
 
     return NextResponse.json({ ok: true, order });

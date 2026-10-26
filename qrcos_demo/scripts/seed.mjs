@@ -41,7 +41,7 @@ async function seed() {
     logoUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&h=200&fit=crop",
     expiredAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     status: "active",
-    telegramChat: process.env.TELEGRAM_CHANNEL || "@post_timir_content",
+    telegramChat: "",
     config: [
       { feeName: "VAT", type: "percent", amount: 15 },
       { feeName: "Service Charge", type: "fixed", amount: 2.5 },
@@ -64,7 +64,7 @@ async function seed() {
     logoUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=200&h=200&fit=crop",
     expiredAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
     status: "active",
-    telegramChat: process.env.TELEGRAM_CHANNEL || "@post_timir_content",
+    telegramChat: "",
     config: [
       { feeName: "Sales Tax", type: "percent", amount: 8.5 },
     ],

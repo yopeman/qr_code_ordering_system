@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/Modal";
 import { QRCodeModal } from "@/components/QRCodeModal";
+import { LogoUpload } from "@/components/LogoUpload";
+import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
+import { slugify } from "@/lib/utils";
 import {
   Shield,
   Plus,
@@ -67,6 +70,7 @@ export default function AdminPage() {
   // Restaurant Edit/Create Modal
   const [restModalOpen, setRestModalOpen] = useState(false);
   const [editingRest, setEditingRest] = useState<RestaurantItem | null>(null);
+  const [isSlugManual, setIsSlugManual] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -75,7 +79,10 @@ export default function AdminPage() {
     expiredAt: "",
     status: "active" as "active" | "inactive" | "suspended",
     telegramChat: "",
-    feesStr: "VAT:percent:15, Service Charge:fixed:2.5",
+    fees: [
+      { feeName: "VAT", type: "percent" as const, amount: 15 },
+      { feeName: "Service Charge", type: "fixed" as const, amount: 2.5 },
+    ] as FeeItem[],
   });
   const [savingRest, setSavingRest] = useState(false);
   const [restError, setRestError] = useState("");
@@ -350,106 +357,114 @@ export default function AdminPage() {
     }
   };
 
-  // Save restaurant (create or edit)
-  const handleSaveRestaurant = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRestError("");
+    const handleNameChange = (name: string) => {
+      setFormData((prev) => ({
+        ...prev,
+        name,
+        slug: isSlugManual ? prev.slug : slugify(name),
+      }));
+    };
 
-    if (!formData.name.trim() || !formData.slug.trim()) {
-      setRestError("Name and Slug are required");
-      return;
-    }
+    const handleSlugChange = (slug: string) => {
+      setIsSlugManual(true);
+      setFormData((prev) => ({ ...prev, slug }));
+    };
 
-    // Parse fees string "VAT:percent:15, Service Charge:fixed:2.5"
-    const parsedConfig: any[] = [];
-    if (formData.feesStr.trim()) {
-      const parts = formData.feesStr.split(",");
-      for (const p of parts) {
-        const [feeName, type, amount] = p.split(":").map((s) => s.trim());
-        if (feeName && (type === "percent" || type === "fixed") && !isNaN(Number(amount))) {
-          parsedConfig.push({
-            feeName,
-            type,
-            amount: Number(amount),
-          });
-        }
-      }
-    }
+    // Save restaurant (create or edit)
+    const handleSaveRestaurant = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setRestError("");
 
-    setSavingRest(true);
-    try {
-      const payload = {
-        name: formData.name,
-        slug: formData.slug,
-        description: formData.description,
-        logoUrl: formData.logoUrl,
-        expiredAt: formData.expiredAt ? new Date(formData.expiredAt).toISOString() : null,
-        status: formData.status,
-        telegramChat: formData.telegramChat,
-        config: parsedConfig,
-      };
-
-      const url = editingRest
-        ? `/api/admin/restaurants/${editingRest._id}`
-        : "/api/admin/restaurants";
-      const method = editingRest ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setRestError(data.error || "Failed to save restaurant");
+      if (!formData.name.trim() || !formData.slug.trim()) {
+        setRestError("Name and Slug are required");
         return;
       }
 
-      setRestModalOpen(false);
-      loadRestaurants();
-    } catch (err: any) {
-      setRestError(err.message || "Failed to save");
-    } finally {
-      setSavingRest(false);
-    }
-  };
+      const parsedConfig = (formData.fees || []).map((f) => ({
+        feeName: f.feeName.trim(),
+        type: f.type,
+        amount: parseFloat(String(f.amount)) || 0,
+      }));
 
-  const openCreateModal = () => {
-    setEditingRest(null);
-    setFormData({
-      name: "",
-      slug: "",
-      description: "",
-      logoUrl: "",
-      expiredAt: "",
-      status: "active",
-      telegramChat: "@post_timir_content",
-      feesStr: "VAT:percent:15, Service Charge:fixed:2.5",
-    });
-    setRestError("");
-    setRestModalOpen(true);
-  };
+      setSavingRest(true);
+      try {
+        const payload = {
+          name: formData.name.trim(),
+          slug: formData.slug.trim(),
+          description: formData.description,
+          logoUrl: formData.logoUrl,
+          expiredAt: formData.expiredAt ? new Date(formData.expiredAt).toISOString() : null,
+          status: formData.status,
+          telegramChat: formData.telegramChat?.trim() || "",
+          config: parsedConfig,
+        };
 
-  const openEditModal = (rest: RestaurantItem) => {
-    setEditingRest(rest);
-    const feesStr = (rest.config || [])
-      .map((c) => `${c.feeName}:${c.type}:${c.amount}`)
-      .join(", ");
+        const url = editingRest
+          ? `/api/admin/restaurants/${editingRest._id}`
+          : "/api/admin/restaurants";
+        const method = editingRest ? "PUT" : "POST";
 
-    setFormData({
-      name: rest.name,
-      slug: rest.slug,
-      description: rest.description || "",
-      logoUrl: rest.logoUrl || "",
-      expiredAt: rest.expiredAt ? rest.expiredAt.substring(0, 10) : "",
-      status: rest.status,
-      telegramChat: rest.telegramChat || "",
-      feesStr,
-    });
-    setRestError("");
-    setRestModalOpen(true);
-  };
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setRestError(data.error || "Failed to save restaurant");
+          return;
+        }
+
+        setRestModalOpen(false);
+        loadRestaurants();
+      } catch (err: any) {
+        setRestError(err.message || "Failed to save");
+      } finally {
+        setSavingRest(false);
+      }
+    };
+
+    const openCreateModal = () => {
+      setEditingRest(null);
+      setIsSlugManual(false);
+      setFormData({
+        name: "",
+        slug: "",
+        description: "",
+        logoUrl: "",
+        expiredAt: "",
+        status: "active",
+        telegramChat: "", // No default telegram channel!
+        fees: [
+          { feeName: "VAT", type: "percent", amount: 15 },
+          { feeName: "Service Charge", type: "fixed", amount: 2.5 },
+        ],
+      });
+      setRestError("");
+      setRestModalOpen(true);
+    };
+
+    const openEditModal = (rest: RestaurantItem) => {
+      setEditingRest(rest);
+      setIsSlugManual(true);
+      setFormData({
+        name: rest.name,
+        slug: rest.slug,
+        description: rest.description || "",
+        logoUrl: rest.logoUrl || "",
+        expiredAt: rest.expiredAt ? rest.expiredAt.substring(0, 10) : "",
+        status: rest.status,
+        telegramChat: rest.telegramChat || "",
+        fees: (rest.config || []).map((c) => ({
+          feeName: c.feeName,
+          type: c.type,
+          amount: c.amount,
+        })),
+      });
+      setRestError("");
+      setRestModalOpen(true);
+    };
 
   const openOrdersModal = async (rest: RestaurantItem) => {
     setSelectedRestForOrders(rest);
@@ -1050,22 +1065,29 @@ export default function AdminPage() {
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. Bistro Delight"
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="e.g. Bistro Delight & Grill"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                URL Slug *
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  URL Slug *
+                </label>
+                {!isSlugManual && formData.slug && (
+                  <span className="text-[10px] uppercase font-bold text-orange-600 bg-orange-50 dark:bg-orange-950/60 px-1.5 py-0.5 rounded">
+                    Auto-slugified
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 required
                 value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                placeholder="e.g. bistro-delight"
+                onChange={(e) => handleSlugChange(e.target.value)}
+                placeholder="e.g. bistro-delight-and-grill"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -1084,35 +1106,31 @@ export default function AdminPage() {
             />
           </div>
 
+          {/* Logo Upload with Cloudinary Integration */}
+          <LogoUpload
+            value={formData.logoUrl}
+            onChange={(url) => setFormData((prev) => ({ ...prev, logoUrl: url }))}
+            folder="qrcos/restaurants"
+            label="Restaurant Logo (Cloudinary Upload)"
+          />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Logo URL
-              </label>
-              <input
-                type="url"
-                value={formData.logoUrl}
-                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                placeholder="https://..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Telegram Chat / Channel ID
+                Telegram Chat / Channel ID (Optional)
               </label>
               <input
                 type="text"
                 value={formData.telegramChat}
                 onChange={(e) => setFormData({ ...formData, telegramChat: e.target.value })}
-                placeholder="@post_timir_content"
+                placeholder="e.g. @my_restaurant_orders"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
+              <p className="text-[10px] text-slate-400 mt-1">
+                No default channel. Leave blank if not using Telegram notifications.
+              </p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
                 Account Status
@@ -1127,34 +1145,26 @@ export default function AdminPage() {
                 <option value="suspended">Suspended</option>
               </select>
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Expiry Date
-              </label>
-              <input
-                type="date"
-                value={formData.expiredAt}
-                onChange={(e) => setFormData({ ...formData, expiredAt: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Fee Config (format: FeeName:type:amount, comma-separated)
+              Expiry Date
             </label>
             <input
-              type="text"
-              value={formData.feesStr}
-              onChange={(e) => setFormData({ ...formData, feesStr: e.target.value })}
-              placeholder="e.g. VAT:percent:15, Service Fee:fixed:2.5"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+              type="date"
+              value={formData.expiredAt}
+              onChange={(e) => setFormData({ ...formData, expiredAt: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Type can be &apos;percent&apos; or &apos;fixed&apos;. Example: VAT:percent:15 calculates 15% on item subtotal.
-            </p>
+          </div>
+
+          {/* Interactive Fee Config Form */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <FeeConfigBuilder
+              fees={formData.fees}
+              onChange={(fees) => setFormData((prev) => ({ ...prev, fees }))}
+            />
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">

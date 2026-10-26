@@ -1,18 +1,26 @@
 import { v2 as cloudinary } from "cloudinary";
 
+const cloudinaryUrl = process.env.CLOUDINARY_URL;
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-const isConfigured = Boolean(cloudName && apiKey && apiSecret);
+const isConfigured = Boolean(cloudinaryUrl || (cloudName && apiKey && apiSecret));
 
 if (isConfigured) {
-  cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    secure: true,
-  });
+  if (cloudinaryUrl) {
+    cloudinary.config({
+      cloudinary_url: cloudinaryUrl,
+      secure: true,
+    });
+  } else {
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+      secure: true,
+    });
+  }
 }
 
 export async function uploadMedia(fileDataUriOrUrl: string, folder = "qrcos"): Promise<string> {
@@ -24,11 +32,11 @@ export async function uploadMedia(fileDataUriOrUrl: string, folder = "qrcos"): P
       });
       return result.secure_url;
     } catch (err) {
-      console.warn("Cloudinary upload failed, using direct payload fallback:", err);
+      console.warn("Cloudinary upload failed, falling back to original payload:", err);
       return fileDataUriOrUrl;
     }
   }
 
-  // Graceful fallback: return the image as-is (e.g. data URI, Unsplash URL, or existing link)
+  // Graceful fallback: return the image data as-is if no Cloudinary keys
   return fileDataUriOrUrl;
 }

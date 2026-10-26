@@ -66,16 +66,20 @@ function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;");
 }
 
+/**
+ * Sends order receipt to the restaurant's configured telegramChat.
+ * Removed default telegram channel fallback - only dispatches if restaurant explicitly has telegramChat set.
+ */
 export async function sendTelegramOrder(
   order: IOrder,
   restaurantName: string,
   chatOverride?: string
 ): Promise<number | null> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const channel = chatOverride?.trim() || process.env.TELEGRAM_CHANNEL;
+  const channel = chatOverride?.trim();
 
   if (!token || !channel) {
-    console.warn("Telegram bot token or channel not configured.");
+    // No telegram chat configured for this restaurant - gracefully skip
     return null;
   }
 
@@ -97,7 +101,7 @@ export async function sendTelegramOrder(
 
     const data = await response.json();
     if (!response.ok || !data.ok) {
-      console.error("Telegram sendMessage error:", data);
+      console.warn(`Telegram sendMessage skipped/failed for chat ${channel}:`, data.description);
       return null;
     }
 
