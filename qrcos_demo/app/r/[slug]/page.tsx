@@ -1,0 +1,1388 @@
+"use client";
+
+import React, { useState, useEffect, use } from "react";
+import { Modal } from "@/components/Modal";
+import { QRCodeModal } from "@/components/QRCodeModal";
+import {
+  Store,
+  UtensilsCrossed,
+  Settings,
+  ChefHat,
+  QrCode,
+  KeyRound,
+  LogOut,
+  Plus,
+  Edit2,
+  Trash2,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ExternalLink,
+  Upload,
+} from "lucide-react";
+
+interface MenuItem {
+  _id: string;
+  category: string;
+  name: string;
+  description: string;
+  price: number;
+  detail: { key: string; value: string }[];
+  imgUrls: string[];
+  visibility: "public" | "private";
+}
+
+interface RestaurantProfile {
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  detail: { key: string; value: string }[];
+  logoUrl: string;
+  expiredAt: string | null;
+  status: "active" | "inactive" | "suspended";
+  telegramChat: string;
+  config: { feeName: string; type: "percent" | "fixed"; amount: number }[];
+}
+
+export default function RestaurantOwnerPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = use(params);
+
+  // Auth state
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isOwnerAuth, setIsOwnerAuth] = useState(false);
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
+  const [loginPassword, setLoginPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<"menu" | "orders" | "settings">("menu");
+
+  // Restaurant & Menu Data
+  const [restaurant, setRestaurant] = useState<RestaurantProfile | null>(null);
+  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [loadingMenus, setLoadingMenus] = useState(false);
+
+  // Menu Modal State
+  const [menuModalOpen, setMenuModalOpen] = useState(false);
+  const [editingMenu, setEditingMenu] = useState<MenuItem | null>(null);
+  const [menuFormData, setMenuFormData] = useState({
+    category: "Mains",
+    name: "",
+    description: "",
+    price: "",
+    imageUrl: "",
+    detailsStr: "Calories:500 kcal, Vegetarian:Yes",
+    visibility: "public" as "public" | "private",
+  });
+  const [savingMenu, setSavingMenu] = useState(false);
+  const [menuError, setMenuError] = useState("");
+
+  // Orders State
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  // QR Modal
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+
+  // Change Password Modal
+  const [changePwdOpen, setChangePwdOpen] = useState(false);
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [changeNewPwd, setChangeNewPwd] = useState("");
+  const [changeConfirmPwd, setChangeConfirmPwd] = useState("");
+  const [pwdMsg, setPwdMsg] = useState({ text: "", isError: false });
+  const [pwdLoading, setPwdLoading] = useState(false);
+
+  // Settings form
+  const [settingsFormData, setSettingsFormData] = useState({
+    name: "",
+    description: "",
+    logoUrl: "",
+    telegramChat: "",
+    detailsStr: "",
+    feesStr: "",
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+  useEffect(() => {
+    initAuthAndData();
+  }, [slug]);
+
+  const initAuthAndData = async () => {
+    setAuthChecking(true);
+    setAuthError("");
+    try {
+      // 1. Check if existing session cookie/token is valid for this slug
+      const authRes = await fetch("/api/auth/restaurant");
+      if (authRes.ok) {
+        const authData = await authRes.json();
+        if (authData.authenticated && authData.restaurant?.slug === slug) {
+          setIsOwnerAuth(true);
+          await loadRestaurantData();
+          return;
+        }
+      }
+
+      // 2. Otherwise check password setup status
+      const checkRes = await fetch("/api/auth/restaurant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "check", slug }),
+      });
+      const checkData = await checkRes.json();
+
+      if (!checkRes.ok) {
+        setAuthError(checkData.error || "Restaurant not found");
+        return;
+      }
+
+      setNeedsPasswordSetup(Boolean(checkData.needsPasswordSetup));
+    } catch (err: any) {
+      setAuthError(err.message || "Authentication error");
+    } finally {
+      setAuthChecking(false);
+    }
+  };
+
+  const loadRestaurantData = async () => {
+    try {
+      // Fetch restaurant
+      const restRes = await fetch(`/api/restaurants/${slug}`);
+      if (restRes.ok) {
+        const restData = await restRes.json();
+        const r = restData.restaurant;
+        setRestaurant(r);
+
+        const detailsStr = (r.detail || []).map((d: any) => `${d.key}:${d.value}`).join(", ");
+        const feesStr = (r.config || []).map((c: any) => `${c.feeName}:${c.type}:${c.amount}`).join(", ");
+
+        setSettingsFormData({
+          name: r.name || "",
+          description: r.description || "",
+          logoUrl: r.logoUrl || "",
+          telegramChat: r.telegramChat || "",
+          detailsStr,
+          feesStr,
+        });
+      }
+
+      // Fetch menus
+      await loadMenus();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadMenus = async () => {
+    setLoadingMenus(true);
+    try {
+      const res = await fetch(`/api/restaurants/${slug}/menus`);
+      if (res.ok) {
+        const data = await res.json();
+        setMenus(data.menus || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMenus(false);
+    }
+  };
+
+  const loadOrders = async () => {
+    setLoadingOrders(true);
+    try {
+      const res = await fetch(`/api/orders/restaurant/${slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.orders || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  // Auth: Setup Password (null password onboarding)
+  const handleSetupPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+
+    if (!newPassword || newPassword.length < 4) {
+      setAuthError("Password must be at least 4 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setAuthError("Passwords do not match");
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      const res = await fetch("/api/auth/restaurant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "setup",
+          slug,
+          newPassword,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setAuthError(data.error || "Failed to set up password");
+        return;
+      }
+
+      localStorage.setItem(`qrcos-restaurant-${data.token}`, data.token);
+      setIsOwnerAuth(true);
+      await loadRestaurantData();
+    } catch (err: any) {
+      setAuthError(err.message || "Setup failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Auth: Standard Login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+
+    if (!loginPassword) {
+      setAuthError("Password is required");
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      const res = await fetch("/api/auth/restaurant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "login",
+          slug,
+          password: loginPassword,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.needsPasswordSetup) {
+          setNeedsPasswordSetup(true);
+          return;
+        }
+        setAuthError(data.error || "Invalid password");
+        return;
+      }
+
+      localStorage.setItem(`qrcos-restaurant-${data.token}`, data.token);
+      setIsOwnerAuth(true);
+      await loadRestaurantData();
+    } catch (err: any) {
+      setAuthError(err.message || "Login failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/restaurant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "logout" }),
+    });
+    setIsOwnerAuth(false);
+    setNeedsPasswordSetup(false);
+    setLoginPassword("");
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdMsg({ text: "", isError: false });
+
+    if (!changeNewPwd || changeNewPwd.length < 4) {
+      setPwdMsg({ text: "New password must be at least 4 characters", isError: true });
+      return;
+    }
+    if (changeNewPwd !== changeConfirmPwd) {
+      setPwdMsg({ text: "Passwords do not match", isError: true });
+      return;
+    }
+
+    setPwdLoading(true);
+    try {
+      const res = await fetch("/api/auth/restaurant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "change-password",
+          slug,
+          currentPassword: currentPwd,
+          newPassword: changeNewPwd,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPwdMsg({ text: data.error || "Failed to update password", isError: true });
+        return;
+      }
+
+      setPwdMsg({ text: "Password updated successfully!", isError: false });
+      setTimeout(() => {
+        setChangePwdOpen(false);
+        setCurrentPwd("");
+        setChangeNewPwd("");
+        setChangeConfirmPwd("");
+        setPwdMsg({ text: "", isError: false });
+      }, 1500);
+    } catch (err: any) {
+      setPwdMsg({ text: err.message || "Failed to change password", isError: true });
+    } finally {
+      setPwdLoading(false);
+    }
+  };
+
+  // Menu Management
+  const openCreateMenuModal = () => {
+    setEditingMenu(null);
+    setMenuFormData({
+      category: selectedCategory !== "All" ? selectedCategory : "Mains",
+      name: "",
+      description: "",
+      price: "",
+      imageUrl: "",
+      detailsStr: "Calories:500 kcal, Spice:Mild",
+      visibility: "public",
+    });
+    setMenuError("");
+    setMenuModalOpen(true);
+  };
+
+  const openEditMenuModal = (item: MenuItem) => {
+    setEditingMenu(item);
+    const detailsStr = (item.detail || []).map((d) => `${d.key}:${d.value}`).join(", ");
+    setMenuFormData({
+      category: item.category,
+      name: item.name,
+      description: item.description || "",
+      price: String(item.price),
+      imageUrl: item.imgUrls?.[0] || "",
+      detailsStr,
+      visibility: item.visibility,
+    });
+    setMenuError("");
+    setMenuModalOpen(true);
+  };
+
+  const handleSaveMenu = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMenuError("");
+
+    if (!menuFormData.name.trim() || !menuFormData.category.trim() || !menuFormData.price) {
+      setMenuError("Category, Name, and Price are required");
+      return;
+    }
+
+    // Parse details
+    const parsedDetail: { key: string; value: string }[] = [];
+    if (menuFormData.detailsStr.trim()) {
+      for (const pair of menuFormData.detailsStr.split(",")) {
+        const [k, v] = pair.split(":").map((s) => s.trim());
+        if (k && v) parsedDetail.push({ key: k, value: v });
+      }
+    }
+
+    setSavingMenu(true);
+    try {
+      const payload = {
+        category: menuFormData.category.trim(),
+        name: menuFormData.name.trim(),
+        description: menuFormData.description.trim(),
+        price: parseFloat(menuFormData.price) || 0,
+        detail: parsedDetail,
+        imgUrls: menuFormData.imageUrl.trim() ? [menuFormData.imageUrl.trim()] : [],
+        visibility: menuFormData.visibility,
+      };
+
+      const url = editingMenu
+        ? `/api/restaurants/${slug}/menus/${editingMenu._id}`
+        : `/api/restaurants/${slug}/menus`;
+      const method = editingMenu ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setMenuError(data.error || "Failed to save menu");
+        return;
+      }
+
+      setMenuModalOpen(false);
+      loadMenus();
+    } catch (err: any) {
+      setMenuError(err.message || "Failed to save menu");
+    } finally {
+      setSavingMenu(false);
+    }
+  };
+
+  const handleDeleteMenu = async (item: MenuItem) => {
+    if (!confirm(`Delete "${item.name}" from your menu?`)) return;
+
+    try {
+      const res = await fetch(`/api/restaurants/${slug}/menus/${item._id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        loadMenus();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleVisibility = async (item: MenuItem) => {
+    const next = item.visibility === "public" ? "private" : "public";
+    try {
+      const res = await fetch(`/api/restaurants/${slug}/menus/${item._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibility: next }),
+      });
+      if (res.ok) {
+        setMenus((prev) =>
+          prev.map((m) => (m._id === item._id ? { ...m, visibility: next } : m))
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Settings Save
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    setSettingsSuccess(false);
+
+    try {
+      // Parse details
+      const detail: { key: string; value: string }[] = [];
+      if (settingsFormData.detailsStr.trim()) {
+        for (const pair of settingsFormData.detailsStr.split(",")) {
+          const [k, v] = pair.split(":").map((s) => s.trim());
+          if (k && v) detail.push({ key: k, value: v });
+        }
+      }
+
+      // Parse fees
+      const config: any[] = [];
+      if (settingsFormData.feesStr.trim()) {
+        for (const f of settingsFormData.feesStr.split(",")) {
+          const [feeName, type, amount] = f.split(":").map((s) => s.trim());
+          if (feeName && (type === "percent" || type === "fixed") && !isNaN(Number(amount))) {
+            config.push({ feeName, type, amount: Number(amount) });
+          }
+        }
+      }
+
+      // Owner cannot modify status or expiredAt per spec
+      const payload = {
+        name: settingsFormData.name,
+        description: settingsFormData.description,
+        logoUrl: settingsFormData.logoUrl,
+        telegramChat: settingsFormData.telegramChat,
+        detail,
+        config,
+      };
+
+      const res = await fetch(`/api/restaurants/${slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setRestaurant(data.restaurant);
+        setSettingsSuccess(true);
+        setTimeout(() => setSettingsSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  // Quick Kitchen status switcher
+  const handleUpdateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) => (o._id === orderId ? { ...o, status } : o))
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const categories = ["All", ...Array.from(new Set(menus.map((m) => m.category)))];
+  const filteredMenus =
+    selectedCategory === "All"
+      ? menus
+      : menus.filter((m) => m.category === selectedCategory);
+
+  if (authChecking) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[70vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+      </div>
+    );
+  }
+
+  // Auth Screen
+  if (!isOwnerAuth) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl">
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-600 mx-auto mb-5">
+            <Store className="w-7 h-7" />
+          </div>
+
+          <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white">
+            Restaurant Owner Portal
+          </h2>
+          <p className="text-xs text-center font-mono text-orange-600 mt-1 mb-6">
+            /r/{slug}
+          </p>
+
+          {authError && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          {needsPasswordSetup ? (
+            <form onSubmit={handleSetupPassword} className="space-y-4">
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+                Welcome to your restaurant portal! Your account is currently unpassworded. Please establish a password to complete onboarding.
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Create Owner Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Minimum 4 characters"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Set Password & Enter Dashboard
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Owner Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter restaurant password"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Log In
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Restaurant Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-4">
+          {restaurant?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={restaurant.logoUrl}
+              alt={restaurant.name}
+              className="w-14 h-14 rounded-2xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-600 flex items-center justify-center font-bold text-xl">
+              {restaurant?.name?.charAt(0) || "R"}
+            </div>
+          )}
+
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                {restaurant?.name}
+              </h1>
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                {restaurant?.status}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <span>Owner Dashboard</span>
+              <span>•</span>
+              <a
+                href={`/m/${slug}?table=12`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-orange-600 hover:underline flex items-center gap-1 font-mono"
+              >
+                /m/{slug} <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setQrModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 transition"
+          >
+            <QrCode className="w-4 h-4" />
+            Table QR Stand
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setChangePwdOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition"
+          >
+            <KeyRound className="w-4 h-4" />
+            Password
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 transition"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
+        <button
+          type="button"
+          onClick={() => setActiveTab("menu")}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+            activeTab === "menu"
+              ? "border-orange-600 text-orange-600"
+              : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <UtensilsCrossed className="w-4 h-4" />
+          Menu Management ({menus.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("orders");
+            loadOrders();
+          }}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+            activeTab === "orders"
+              ? "border-orange-600 text-orange-600"
+              : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <ChefHat className="w-4 h-4" />
+          Live Orders ({orders.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("settings")}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+            activeTab === "settings"
+              ? "border-orange-600 text-orange-600"
+              : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          Restaurant Settings
+        </button>
+      </div>
+
+      {/* TAB 1: MENU MANAGEMENT */}
+      {activeTab === "menu" && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Category Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-xl">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    selectedCategory === cat
+                      ? "bg-orange-600 text-white shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={openCreateMenuModal}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition"
+            >
+              <Plus className="w-4 h-4" />
+              Add Dish
+            </button>
+          </div>
+
+          {loadingMenus ? (
+            <div className="py-20 flex justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+            </div>
+          ) : filteredMenus.length === 0 ? (
+            <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8">
+              <p className="text-slate-500 text-sm">No dishes found in this category.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMenus.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex flex-col justify-between rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:border-orange-500/30 transition group"
+                >
+                  <div>
+                    {item.imgUrls?.[0] ? (
+                      <div className="h-44 w-full overflow-hidden bg-slate-100 relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.imgUrls[0]}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span
+                          className={`absolute top-3 right-3 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full backdrop-blur-md ${
+                            item.visibility === "public"
+                              ? "bg-emerald-900/80 text-emerald-200 border border-emerald-500/30"
+                              : "bg-slate-900/80 text-slate-300 border border-slate-700"
+                          }`}
+                        >
+                          {item.visibility}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="h-32 w-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xs">
+                        No Photo
+                      </div>
+                    )}
+
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                          {item.category}
+                        </span>
+                        <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
+                          ${Number(item.price).toFixed(2)}
+                        </span>
+                      </div>
+
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white mb-1.5">
+                        {item.name}
+                      </h3>
+
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
+                        {item.description || "No description provided."}
+                      </p>
+
+                      {item.detail?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {item.detail.map((d, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                            >
+                              {d.key}: {d.value}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800 mt-2 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVisibility(item)}
+                      className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1"
+                    >
+                      {item.visibility === "public" ? (
+                        <>
+                          <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Public</span>
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Private</span>
+                        </>
+                      )}
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEditMenuModal(item)}
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                        title="Edit Dish"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMenu(item)}
+                        className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
+                        title="Delete Dish"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: LIVE ORDERS */}
+      {activeTab === "orders" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Kitchen Orders ({orders.length})
+            </h2>
+            <a
+              href={`/o/${slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-orange-600 hover:underline"
+            >
+              Open Full Kitchen Display Screen <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+
+          {loadingOrders ? (
+            <div className="py-20 flex justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+            </div>
+          ) : orders.length === 0 ? (
+            <p className="text-center py-16 text-slate-500 text-sm">No orders recorded yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {orders.map((ord) => (
+                <div
+                  key={ord._id}
+                  className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-extrabold text-base text-slate-900 dark:text-white">
+                        Table {ord.table}
+                      </span>
+                      <p className="text-xs text-slate-400">
+                        {ord.customerName} • {new Date(ord.orderedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        ord.status === "completed"
+                          ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                          : ord.status === "preparing"
+                          ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                          : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                      }`}
+                    >
+                      {ord.status}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                    {ord.details?.map((it: any, i: number) => (
+                      <div key={i} className="flex justify-between">
+                        <span>
+                          {it.name} <span className="text-slate-400">x{it.quantity}</span>
+                        </span>
+                        <span className="font-mono">${Number(it.subtotalPrice).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {ord.notes && (
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 p-2 rounded-lg italic">
+                      Note: &quot;{ord.notes}&quot;
+                    </p>
+                  )}
+
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between font-bold text-xs">
+                    <span>Total</span>
+                    <span className="font-mono text-orange-600">${Number(ord.totalPrice).toFixed(2)}</span>
+                  </div>
+
+                  {/* Status buttons */}
+                  <div className="grid grid-cols-3 gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOrderStatus(ord._id, "pending")}
+                      className={`py-1 text-[11px] font-semibold rounded-lg border transition ${
+                        ord.status === "pending"
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100"
+                      }`}
+                    >
+                      Pending
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOrderStatus(ord._id, "preparing")}
+                      className={`py-1 text-[11px] font-semibold rounded-lg border transition ${
+                        ord.status === "preparing"
+                          ? "bg-amber-600 text-white border-amber-600"
+                          : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100"
+                      }`}
+                    >
+                      Preparing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOrderStatus(ord._id, "completed")}
+                      className={`py-1 text-[11px] font-semibold rounded-lg border transition ${
+                        ord.status === "completed"
+                          ? "bg-emerald-600 text-white border-emerald-600"
+                          : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100"
+                      }`}
+                    >
+                      Completed
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: SETTINGS */}
+      {activeTab === "settings" && (
+        <div className="max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Restaurant Profile & Charges
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Update branding, customer details, and fee structures. Note: Account status and subscription expiry can only be managed by Super Admins.
+            </p>
+          </div>
+
+          {settingsSuccess && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Settings updated successfully!</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveSettings} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Restaurant Display Name
+              </label>
+              <input
+                type="text"
+                required
+                value={settingsFormData.name}
+                onChange={(e) => setSettingsFormData({ ...settingsFormData, name: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Description / Culinary Story
+              </label>
+              <textarea
+                rows={3}
+                value={settingsFormData.description}
+                onChange={(e) => setSettingsFormData({ ...settingsFormData, description: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Logo URL
+                </label>
+                <input
+                  type="url"
+                  value={settingsFormData.logoUrl}
+                  onChange={(e) => setSettingsFormData({ ...settingsFormData, logoUrl: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Telegram Chat / Channel ID
+                </label>
+                <input
+                  type="text"
+                  value={settingsFormData.telegramChat}
+                  onChange={(e) => setSettingsFormData({ ...settingsFormData, telegramChat: e.target.value })}
+                  placeholder="@post_timir_content"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Contact & Amenities (key:value, comma separated)
+              </label>
+              <input
+                type="text"
+                value={settingsFormData.detailsStr}
+                onChange={(e) => setSettingsFormData({ ...settingsFormData, detailsStr: e.target.value })}
+                placeholder="Phone:+1 555-0192, WiFi:Guest123, Hours:11am-11pm"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Configured Fees & Taxes (name:type:amount, comma separated)
+              </label>
+              <input
+                type="text"
+                value={settingsFormData.feesStr}
+                onChange={(e) => setSettingsFormData({ ...settingsFormData, feesStr: e.target.value })}
+                placeholder="VAT:percent:15, Service Fee:fixed:2.5"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                e.g. VAT:percent:15 calculates 15% VAT on subtotal. Service Fee:fixed:2.5 adds $2.50 flat.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={savingSettings}
+                className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition disabled:opacity-50"
+              >
+                {savingSettings ? "Saving Settings..." : "Save Restaurant Settings"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 1: Add/Edit Menu Item */}
+      <Modal
+        isOpen={menuModalOpen}
+        onClose={() => setMenuModalOpen(false)}
+        title={editingMenu ? `Edit Dish: ${editingMenu.name}` : "Add New Dish to Menu"}
+        maxWidth="max-w-xl"
+      >
+        <form onSubmit={handleSaveMenu} className="space-y-4">
+          {menuError && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs">
+              {menuError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Category *
+              </label>
+              <input
+                type="text"
+                required
+                value={menuFormData.category}
+                onChange={(e) => setMenuFormData({ ...menuFormData, category: e.target.value })}
+                placeholder="e.g. Starters, Mains, Drinks"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Price ($ USD) *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={menuFormData.price}
+                onChange={(e) => setMenuFormData({ ...menuFormData, price: e.target.value })}
+                placeholder="15.50"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Dish Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={menuFormData.name}
+              onChange={(e) => setMenuFormData({ ...menuFormData, name: e.target.value })}
+              placeholder="e.g. Truffle Burrata Bruschetta"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Description & Ingredients
+            </label>
+            <textarea
+              rows={2}
+              value={menuFormData.description}
+              onChange={(e) => setMenuFormData({ ...menuFormData, description: e.target.value })}
+              placeholder="Ingredients, culinary notes, preparation details..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Photo URL (or Unsplash / Cloudinary link)
+            </label>
+            <input
+              type="url"
+              value={menuFormData.imageUrl}
+              onChange={(e) => setMenuFormData({ ...menuFormData, imageUrl: e.target.value })}
+              placeholder="https://..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Dietary & Details (key:val)
+              </label>
+              <input
+                type="text"
+                value={menuFormData.detailsStr}
+                onChange={(e) => setMenuFormData({ ...menuFormData, detailsStr: e.target.value })}
+                placeholder="Calories:450 kcal, Allergens:Dairy"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Visibility
+              </label>
+              <select
+                value={menuFormData.visibility}
+                onChange={(e: any) => setMenuFormData({ ...menuFormData, visibility: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="public">Public (Visible to diners)</option>
+                <option value="private">Private (Hidden from menu)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setMenuModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={savingMenu}
+              className="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow transition disabled:opacity-50"
+            >
+              {savingMenu ? "Saving..." : editingMenu ? "Update Dish" : "Add Dish"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL 2: Change Password */}
+      <Modal
+        isOpen={changePwdOpen}
+        onClose={() => setChangePwdOpen(false)}
+        title="Change Owner Password"
+      >
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          {pwdMsg.text && (
+            <div
+              className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                pwdMsg.isError
+                  ? "bg-rose-500/10 border border-rose-500/20 text-rose-600"
+                  : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600"
+              }`}
+            >
+              {pwdMsg.isError ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+              <span>{pwdMsg.text}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Current Password
+            </label>
+            <input
+              type="password"
+              required
+              value={currentPwd}
+              onChange={(e) => setCurrentPwd(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              New Password
+            </label>
+            <input
+              type="password"
+              required
+              value={changeNewPwd}
+              onChange={(e) => setChangeNewPwd(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              required
+              value={changeConfirmPwd}
+              onChange={(e) => setChangeConfirmPwd(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          <div className="pt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setChangePwdOpen(false)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={pwdLoading}
+              className="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow transition disabled:opacity-50"
+            >
+              {pwdLoading ? "Saving..." : "Update Password"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL 3: QR Studio */}
+      {restaurant && (
+        <QRCodeModal
+          isOpen={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+          restaurantName={restaurant.name}
+          restaurantSlug={restaurant.slug}
+          logoUrl={restaurant.logoUrl}
+          defaultTable="12"
+        />
+      )}
+    </div>
+  );
+}

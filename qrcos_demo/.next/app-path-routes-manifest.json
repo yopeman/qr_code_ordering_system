@@ -1,0 +1,21 @@
+{
+  "/api/admin/restaurants/[id]/route": "/api/admin/restaurants/[id]",
+  "/api/auth/admin/route": "/api/auth/admin",
+  "/api/orders/[id]/route": "/api/orders/[id]",
+  "/api/orders/restaurant/[slug]/route": "/api/orders/restaurant/[slug]",
+  "/api/orders/route": "/api/orders",
+  "/api/restaurants/[slug]/menus/[id]/route": "/api/restaurants/[slug]/menus/[id]",
+  "/api/restaurants/[slug]/menus/route": "/api/restaurants/[slug]/menus",
+  "/_not-found/page": "/_not-found",
+  "/api/telegram/webhook/route": "/api/telegram/webhook",
+  "/api/upload/route": "/api/upload",
+  "/api/admin/restaurants/route": "/api/admin/restaurants",
+  "/api/auth/restaurant/route": "/api/auth/restaurant",
+  "/api/restaurants/[slug]/route": "/api/restaurants/[slug]",
+  "/admin/page": "/admin",
+  "/m/[slug]/page": "/m/[slug]",
+  "/my-history/page": "/my-history",
+  "/o/[slug]/page": "/o/[slug]",
+  "/page": "/",
+  "/r/[slug]/page": "/r/[slug]"
+}
