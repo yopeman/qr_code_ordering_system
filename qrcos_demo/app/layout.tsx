@@ -1,6 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#090d16" },
+  ],
+};
 
 export const metadata: Metadata = {
   title: "Demo QRCOS — Modern QR Code Restaurant Ordering System",

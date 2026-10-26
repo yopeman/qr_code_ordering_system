@@ -44,6 +44,49 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+/* Fast tap response on mobile (removes 300ms tap delay) */
+button, a, [role="button"], input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Mobile iOS Safari: Prevent automatic zoom-in when tapping form inputs */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe Area Inset Utilities for mobile devices with notches / home indicators */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+}
+
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top, 1rem));
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-safe {
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Hide scrollbars while preserving native scrolling */
+.no-scrollbar, .scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar, .scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 /* Glassmorphism utility */
@@ -63,6 +106,6 @@ body {
 
 /* Modal backdrop with light-dismiss support */
 dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
 }

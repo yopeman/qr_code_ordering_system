@@ -469,7 +469,7 @@ export default function DinerMenuPage({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search dishes, ingredients, drinks..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"
           />
         </div>
 
@@ -568,7 +568,8 @@ export default function DinerMenuPage({
                         <button
                           type="button"
                           onClick={() => updateCartQuantity(dish._id, -1)}
-                          className="w-6 h-6 rounded-lg bg-white dark:bg-slate-900 text-orange-600 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95"
+                          className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 text-orange-600 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 touch-manipulation"
+                          aria-label="Decrease quantity"
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
@@ -578,7 +579,8 @@ export default function DinerMenuPage({
                         <button
                           type="button"
                           onClick={() => addToCart(dish)}
-                          className="w-6 h-6 rounded-lg bg-orange-600 text-white flex items-center justify-center shadow-sm hover:scale-105 active:scale-95"
+                          className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 touch-manipulation"
+                          aria-label="Increase quantity"
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -587,7 +589,7 @@ export default function DinerMenuPage({
                       <button
                         type="button"
                         onClick={() => addToCart(dish)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-500/10 text-orange-600 hover:bg-orange-600 hover:text-white font-semibold text-xs transition active:scale-95"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-500/10 text-orange-600 hover:bg-orange-600 hover:text-white font-bold text-xs transition active:scale-95 touch-manipulation"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add
                       </button>
@@ -600,13 +602,13 @@ export default function DinerMenuPage({
         </div>
       )}
 
-      {/* FLOATING CART BAR (Mobile & Desktop) */}
+      {/* FLOATING CART BAR (Mobile & Desktop with Safe-Area support) */}
       {cart.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-40 animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-safe left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 animate-in slide-in-from-bottom duration-300">
           <button
             type="button"
             onClick={() => setCartDrawerOpen(true)}
-            className="w-full flex items-center justify-between p-4 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white shadow-2xl shadow-orange-600/40 transition active:scale-[0.98]"
+            className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white shadow-2xl shadow-orange-600/40 transition active:scale-[0.98] touch-manipulation"
           >
             <div className="flex items-center gap-3">
               <span className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-bold text-xs">
@@ -689,7 +691,7 @@ export default function DinerMenuPage({
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="e.g. Alex"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
 
@@ -702,7 +704,7 @@ export default function DinerMenuPage({
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
                 placeholder="e.g. No onions, dressing on side"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
           </div>
@@ -824,11 +826,13 @@ export default function DinerMenuPage({
           </p>
           <input
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             required
             value={tableInput}
             onChange={(e) => setTableInput(e.target.value)}
             placeholder="e.g. 12"
-            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
           <button
             type="submit"

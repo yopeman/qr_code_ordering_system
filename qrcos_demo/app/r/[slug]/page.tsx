@@ -100,6 +100,7 @@ export default function RestaurantOwnerPage({
 
   // Orders State
   const [orders, setOrders] = useState<any[]>([]);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "pending" | "preparing" | "completed">("all");
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   // QR Modal
@@ -677,23 +678,23 @@ export default function RestaurantOwnerPage({
     <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Restaurant Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {restaurant?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={restaurant.logoUrl}
               alt={restaurant.name}
-              className="w-14 h-14 rounded-2xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm shrink-0"
             />
           ) : (
-            <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-600 flex items-center justify-center font-bold text-xl">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-orange-500/10 text-orange-600 flex items-center justify-center font-bold text-xl shrink-0">
               {restaurant?.name?.charAt(0) || "R"}
             </div>
           )}
 
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
                 {restaurant?.name}
               </h1>
               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
@@ -715,42 +716,42 @@ export default function RestaurantOwnerPage({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setQrModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 transition touch-manipulation"
           >
             <QrCode className="w-4 h-4" />
-            Table QR Stand
+            <span>Table QR Stand</span>
           </button>
 
           <button
             type="button"
             onClick={() => setChangePwdOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition touch-manipulation"
           >
             <KeyRound className="w-4 h-4" />
-            Password
+            <span>Password</span>
           </button>
 
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 transition touch-manipulation"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 sm:gap-6 overflow-x-auto no-scrollbar whitespace-nowrap">
         <button
           type="button"
           onClick={() => setActiveTab("menu")}
-          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition shrink-0 px-2 sm:px-0 touch-manipulation ${
             activeTab === "menu"
               ? "border-orange-600 text-orange-600"
               : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
@@ -766,7 +767,7 @@ export default function RestaurantOwnerPage({
             setActiveTab("orders");
             loadOrders();
           }}
-          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition shrink-0 px-2 sm:px-0 touch-manipulation ${
             activeTab === "orders"
               ? "border-orange-600 text-orange-600"
               : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
@@ -779,7 +780,7 @@ export default function RestaurantOwnerPage({
         <button
           type="button"
           onClick={() => setActiveTab("settings")}
-          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition shrink-0 px-2 sm:px-0 touch-manipulation ${
             activeTab === "settings"
               ? "border-orange-600 text-orange-600"
               : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
@@ -795,13 +796,13 @@ export default function RestaurantOwnerPage({
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* Category Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-xl">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-xl">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition shrink-0 touch-manipulation ${
                     selectedCategory === cat
                       ? "bg-orange-600 text-white shadow-sm"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
@@ -815,7 +816,7 @@ export default function RestaurantOwnerPage({
             <button
               type="button"
               onClick={openCreateMenuModal}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white font-semibold text-xs shadow-md transition touch-manipulation"
             >
               <Plus className="w-4 h-4" />
               Add Dish
@@ -928,7 +929,7 @@ export default function RestaurantOwnerPage({
                       <button
                         type="button"
                         onClick={() => openEditMenuModal(item)}
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                        className="p-2 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 touch-manipulation inline-flex items-center justify-center"
                         title="Edit Dish"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -936,7 +937,7 @@ export default function RestaurantOwnerPage({
                       <button
                         type="button"
                         onClick={() => handleDeleteMenu(item)}
-                        className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
+                        className="p-2 sm:p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 touch-manipulation inline-flex items-center justify-center"
                         title="Delete Dish"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -953,7 +954,7 @@ export default function RestaurantOwnerPage({
       {/* TAB 2: LIVE ORDERS */}
       {activeTab === "orders" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Kitchen Orders ({orders.length})
             </h2>
@@ -967,6 +968,33 @@ export default function RestaurantOwnerPage({
             </a>
           </div>
 
+          {/* Quick status filter pills on mobile & desktop */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {(["all", "pending", "preparing", "completed"] as const).map((st) => {
+              const count =
+                st === "all"
+                  ? orders.length
+                  : orders.filter((o) => o.status === st).length;
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setOrderStatusFilter(st)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap touch-manipulation ${
+                    orderStatusFilter === st
+                      ? "bg-orange-600 text-white shadow-sm"
+                      : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="capitalize">{st === "all" ? "All Orders" : st}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/20 text-white font-mono">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {loadingOrders ? (
             <div className="py-20 flex justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
@@ -975,7 +1003,9 @@ export default function RestaurantOwnerPage({
             <p className="text-center py-16 text-slate-500 text-sm">No orders recorded yet.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {orders.map((ord) => (
+              {orders
+                .filter((ord) => orderStatusFilter === "all" || ord.status === orderStatusFilter)
+                .map((ord) => (
                 <div
                   key={ord._id}
                   className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4"

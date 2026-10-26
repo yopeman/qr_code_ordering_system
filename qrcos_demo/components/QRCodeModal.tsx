@@ -144,8 +144,8 @@ export function QRCodeModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
             Export format: <span className="font-mono text-slate-700 dark:text-slate-300">{restaurantSlug}_table_{table || "1"}_QR_code.png</span>
           </p>
 
@@ -153,7 +153,7 @@ export function QRCodeModal({
             type="button"
             onClick={handleDownload}
             disabled={generating || !dataUrl}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white font-medium text-sm shadow-lg shadow-orange-500/25 transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white font-semibold text-xs sm:text-sm shadow-lg shadow-orange-500/25 transition-all disabled:opacity-50 touch-manipulation"
           >
             <Download className="w-4 h-4" />
             Download Stand Card (PNG)

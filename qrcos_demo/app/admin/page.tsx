@@ -645,7 +645,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 pb-safe space-y-8">
       {/* Admin Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
@@ -880,7 +880,12 @@ export default function AdminPage() {
         </div>
       ) : (
         <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="Registered Restaurants Directory"
+          >
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 uppercase font-semibold">
                 <tr>
@@ -933,7 +938,7 @@ export default function AdminPage() {
                           setSelectedRestForQR(rest);
                           setQrModalOpen(true);
                         }}
-                        className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20"
+                        className="p-2 sm:p-1.5 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 touch-manipulation inline-flex items-center justify-center"
                         title="QR Stand"
                       >
                         <QrCode className="w-3.5 h-3.5" />
@@ -941,7 +946,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => openOrdersModal(rest)}
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                        className="p-2 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 touch-manipulation inline-flex items-center justify-center"
                         title="View Orders"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -949,7 +954,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => openEditModal(rest)}
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                        className="p-2 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 touch-manipulation inline-flex items-center justify-center"
                         title="Edit Details"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -957,7 +962,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => handleResetRestaurantPassword(rest)}
-                        className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+                        className="p-2 sm:p-1.5 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 touch-manipulation inline-flex items-center justify-center"
                         title="Reset Password to null"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
@@ -965,7 +970,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteRestaurant(rest)}
-                        className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
+                        className="p-2 sm:p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 touch-manipulation inline-flex items-center justify-center"
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

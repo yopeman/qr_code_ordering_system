@@ -98,7 +98,7 @@ export default function MyHistoryPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 pb-safe space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3.5">
@@ -124,7 +124,7 @@ export default function MyHistoryPage() {
           <button
             type="button"
             onClick={handleClearHistory}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition self-start sm:self-auto"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition self-start sm:self-auto touch-manipulation"
           >
             <Trash2 className="w-4 h-4" />
             Clear History
