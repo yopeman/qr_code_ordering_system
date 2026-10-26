@@ -1,10 +1,10 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/api/admin/restaurants/[id]/route": "app/api/admin/restaurants/[id]/route.js",
   "/api/admin/restaurants/route": "app/api/admin/restaurants/route.js",
   "/api/auth/admin/route": "app/api/auth/admin/route.js",
   "/api/auth/restaurant/route": "app/api/auth/restaurant/route.js",
   "/api/orders/[id]/route": "app/api/orders/[id]/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/api/orders/restaurant/[slug]/route": "app/api/orders/restaurant/[slug]/route.js",
   "/api/orders/route": "app/api/orders/route.js",
   "/api/restaurants/[slug]/menus/[id]/route": "app/api/restaurants/[slug]/menus/[id]/route.js",

@@ -7,15 +7,6 @@
       "static/chunks/main-app-fb28279aafd4a339.js",
       "static/chunks/app/_not-found/page-33ee257b44df5ec5.js"
     ],
-    "/layout": [
-      "static/chunks/webpack-68f22649503f8e75.js",
-      "static/chunks/4bd1b696-22178e54d88e45e0.js",
-      "static/chunks/684-92af1af93e4171b2.js",
-      "static/chunks/main-app-fb28279aafd4a339.js",
-      "static/css/ba0ea81f9f4a602e.css",
-      "static/chunks/874-ca00b71317c7cfa2.js",
-      "static/chunks/app/layout-ee69bc4e0dd59ca2.js"
-    ],
     "/api/admin/restaurants/[id]/route": [
       "static/chunks/webpack-68f22649503f8e75.js",
       "static/chunks/4bd1b696-22178e54d88e45e0.js",
@@ -50,6 +41,15 @@
       "static/chunks/684-92af1af93e4171b2.js",
       "static/chunks/main-app-fb28279aafd4a339.js",
       "static/chunks/app/api/orders/[id]/route-11f2251f656313d6.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack-68f22649503f8e75.js",
+      "static/chunks/4bd1b696-22178e54d88e45e0.js",
+      "static/chunks/684-92af1af93e4171b2.js",
+      "static/chunks/main-app-fb28279aafd4a339.js",
+      "static/css/3179f6a834bc52c6.css",
+      "static/chunks/874-ca00b71317c7cfa2.js",
+      "static/chunks/app/layout-ee69bc4e0dd59ca2.js"
     ],
     "/api/orders/restaurant/[slug]/route": [
       "static/chunks/webpack-68f22649503f8e75.js",
@@ -105,9 +105,9 @@
       "static/chunks/4bd1b696-22178e54d88e45e0.js",
       "static/chunks/684-92af1af93e4171b2.js",
       "static/chunks/main-app-fb28279aafd4a339.js",
-      "static/chunks/808-a509baad1e1f0776.js",
-      "static/chunks/866-1ce34a14c695eafd.js",
-      "static/chunks/app/admin/page-fec72e1f1642e3c6.js"
+      "static/chunks/833-16547ca174c57e70.js",
+      "static/chunks/111-687fcdd291818c48.js",
+      "static/chunks/app/admin/page-8d52636103be08ac.js"
     ],
     "/m/[slug]/page": [
       "static/chunks/webpack-68f22649503f8e75.js",
@@ -146,9 +146,9 @@
       "static/chunks/4bd1b696-22178e54d88e45e0.js",
       "static/chunks/684-92af1af93e4171b2.js",
       "static/chunks/main-app-fb28279aafd4a339.js",
-      "static/chunks/808-a509baad1e1f0776.js",
-      "static/chunks/866-1ce34a14c695eafd.js",
-      "static/chunks/app/r/[slug]/page-d02e46d679e84844.js"
+      "static/chunks/833-16547ca174c57e70.js",
+      "static/chunks/111-687fcdd291818c48.js",
+      "static/chunks/app/r/[slug]/page-ba65bef34d9838e3.js"
     ]
   }
 }

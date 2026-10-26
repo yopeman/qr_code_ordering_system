@@ -5,6 +5,7 @@ import { Modal } from "@/components/Modal";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { LogoUpload } from "@/components/LogoUpload";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
+import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
 import {
   Store,
   UtensilsCrossed,
@@ -84,7 +85,10 @@ export default function RestaurantOwnerPage({
     description: "",
     price: "",
     imageUrl: "",
-    detailsStr: "Calories:500 kcal, Vegetarian:Yes",
+    details: [
+      { key: "Calories", value: "500 kcal" },
+      { key: "Vegetarian", value: "Yes" },
+    ] as KeyValueItem[],
     visibility: "public" as "public" | "private",
   });
   const [savingMenu, setSavingMenu] = useState(false);
@@ -111,7 +115,7 @@ export default function RestaurantOwnerPage({
     description: "",
     logoUrl: "",
     telegramChat: "",
-    detailsStr: "",
+    details: [] as KeyValueItem[],
     fees: [] as FeeItem[],
   });
   const [savingSettings, setSavingSettings] = useState(false);
@@ -166,7 +170,10 @@ export default function RestaurantOwnerPage({
         const r = restData.restaurant;
         setRestaurant(r);
 
-        const detailsStr = (r.detail || []).map((d: any) => `${d.key}:${d.value}`).join(", ");
+        const details: KeyValueItem[] = (r.detail || []).map((d: any) => ({
+          key: d.key,
+          value: d.value,
+        }));
         const fees: FeeItem[] = (r.config || []).map((c: any) => ({
           feeName: c.feeName,
           type: c.type,
@@ -178,7 +185,7 @@ export default function RestaurantOwnerPage({
           description: r.description || "",
           logoUrl: r.logoUrl || "",
           telegramChat: r.telegramChat || "",
-          detailsStr,
+          details,
           fees,
         });
       }
@@ -371,7 +378,10 @@ export default function RestaurantOwnerPage({
       description: "",
       price: "",
       imageUrl: "",
-      detailsStr: "Calories:500 kcal, Spice:Mild",
+      details: [
+        { key: "Calories", value: "500 kcal" },
+        { key: "Spice", value: "Mild" },
+      ],
       visibility: "public",
     });
     setMenuError("");
@@ -380,14 +390,17 @@ export default function RestaurantOwnerPage({
 
   const openEditMenuModal = (item: MenuItem) => {
     setEditingMenu(item);
-    const detailsStr = (item.detail || []).map((d) => `${d.key}:${d.value}`).join(", ");
+    const details: KeyValueItem[] = (item.detail || []).map((d) => ({
+      key: d.key,
+      value: d.value,
+    }));
     setMenuFormData({
       category: item.category,
       name: item.name,
       description: item.description || "",
       price: String(item.price),
       imageUrl: item.imgUrls?.[0] || "",
-      detailsStr,
+      details,
       visibility: item.visibility,
     });
     setMenuError("");
@@ -403,14 +416,10 @@ export default function RestaurantOwnerPage({
       return;
     }
 
-    // Parse details
-    const parsedDetail: { key: string; value: string }[] = [];
-    if (menuFormData.detailsStr.trim()) {
-      for (const pair of menuFormData.detailsStr.split(",")) {
-        const [k, v] = pair.split(":").map((s) => s.trim());
-        if (k && v) parsedDetail.push({ key: k, value: v });
-      }
-    }
+    // Clean details
+    const parsedDetail = (menuFormData.details || [])
+      .filter((d) => d.key.trim() && d.value.trim())
+      .map((d) => ({ key: d.key.trim(), value: d.value.trim() }));
 
     setSavingMenu(true);
     try {
@@ -490,14 +499,10 @@ export default function RestaurantOwnerPage({
     setSettingsSuccess(false);
 
     try {
-      // Parse details
-      const detail: { key: string; value: string }[] = [];
-      if (settingsFormData.detailsStr.trim()) {
-        for (const pair of settingsFormData.detailsStr.split(",")) {
-          const [k, v] = pair.split(":").map((s) => s.trim());
-          if (k && v) detail.push({ key: k, value: v });
-        }
-      }
+      // Clean details
+      const detail = (settingsFormData.details || [])
+        .filter((d) => d.key.trim() && d.value.trim())
+        .map((d) => ({ key: d.key.trim(), value: d.value.trim() }));
 
       // Parse fees
       const config = (settingsFormData.fees || []).map((f) => ({
@@ -1118,16 +1123,22 @@ export default function RestaurantOwnerPage({
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Contact & Amenities (key:value, comma separated)
-              </label>
-              <input
-                type="text"
-                value={settingsFormData.detailsStr}
-                onChange={(e) => setSettingsFormData({ ...settingsFormData, detailsStr: e.target.value })}
-                placeholder="Phone:+1 555-0192, WiFi:Guest123, Hours:11am-11pm"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            {/* Interactive Contact & Amenities Key-Value Form */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <KeyValueBuilder
+                label="Contact & Amenities"
+                description="Interactive key-value specifications displayed to diners (e.g. WiFi pass, telephone, opening hours)."
+                keyPlaceholder="Key (e.g. WiFi)"
+                valuePlaceholder="Value (e.g. GuestPass123)"
+                items={settingsFormData.details}
+                onChange={(details) => setSettingsFormData((prev) => ({ ...prev, details }))}
+                presets={[
+                  { key: "Phone", label: "Phone", defaultValue: "+1 " },
+                  { key: "WiFi", label: "WiFi", defaultValue: "" },
+                  { key: "Hours", label: "Hours", defaultValue: "11:00 AM - 11:00 PM" },
+                  { key: "Cuisine", label: "Cuisine", defaultValue: "" },
+                  { key: "Instagram", label: "Instagram", defaultValue: "@" },
+                ]}
               />
             </div>
 
@@ -1232,33 +1243,38 @@ export default function RestaurantOwnerPage({
             label="Dish Photo (Upload to Cloudinary or paste URL)"
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Dietary & Details (key:val)
-              </label>
-              <input
-                type="text"
-                value={menuFormData.detailsStr}
-                onChange={(e) => setMenuFormData({ ...menuFormData, detailsStr: e.target.value })}
-                placeholder="Calories:450 kcal, Allergens:Dairy"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Visibility
+            </label>
+            <select
+              value={menuFormData.visibility}
+              onChange={(e: any) => setMenuFormData({ ...menuFormData, visibility: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="public">Public (Visible to diners)</option>
+              <option value="private">Private (Hidden from menu)</option>
+            </select>
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Visibility
-              </label>
-              <select
-                value={menuFormData.visibility}
-                onChange={(e: any) => setMenuFormData({ ...menuFormData, visibility: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="public">Public (Visible to diners)</option>
-                <option value="private">Private (Hidden from menu)</option>
-              </select>
-            </div>
+          {/* Interactive Dietary & Menu Details Key-Value Form */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <KeyValueBuilder
+              label="Dietary & Menu Details"
+              description="Nutritional info, allergens, spiciness, or dietary indicators."
+              keyPlaceholder="Key (e.g. Calories)"
+              valuePlaceholder="Value (e.g. 450 kcal)"
+              items={menuFormData.details}
+              onChange={(details) => setMenuFormData((prev) => ({ ...prev, details }))}
+              presets={[
+                { key: "Calories", label: "Calories", defaultValue: "450 kcal" },
+                { key: "Spice", label: "Spice", defaultValue: "Medium" },
+                { key: "Allergens", label: "Allergens", defaultValue: "Contains Nuts" },
+                { key: "Vegan", label: "Vegan", defaultValue: "Yes" },
+                { key: "Gluten-Free", label: "Gluten-Free", defaultValue: "Yes" },
+                { key: "Prep Time", label: "Prep Time", defaultValue: "15 mins" },
+              ]}
+            />
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">

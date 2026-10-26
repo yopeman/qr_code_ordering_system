@@ -5,6 +5,7 @@ import { Modal } from "@/components/Modal";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { LogoUpload } from "@/components/LogoUpload";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
+import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
 import { slugify } from "@/lib/utils";
 import {
   Shield,
@@ -79,6 +80,7 @@ export default function AdminPage() {
     expiredAt: "",
     status: "active" as "active" | "inactive" | "suspended",
     telegramChat: "",
+    detail: [] as KeyValueItem[],
     fees: [
       { feeName: "VAT", type: "percent" as const, amount: 15 },
       { feeName: "Service Charge", type: "fixed" as const, amount: 2.5 },
@@ -386,12 +388,17 @@ export default function AdminPage() {
         amount: parseFloat(String(f.amount)) || 0,
       }));
 
+      const parsedDetail = (formData.detail || [])
+        .filter((d) => d.key.trim() && d.value.trim())
+        .map((d) => ({ key: d.key.trim(), value: d.value.trim() }));
+
       setSavingRest(true);
       try {
         const payload = {
           name: formData.name.trim(),
           slug: formData.slug.trim(),
           description: formData.description,
+          detail: parsedDetail,
           logoUrl: formData.logoUrl,
           expiredAt: formData.expiredAt ? new Date(formData.expiredAt).toISOString() : null,
           status: formData.status,
@@ -436,6 +443,10 @@ export default function AdminPage() {
         expiredAt: "",
         status: "active",
         telegramChat: "", // No default telegram channel!
+        detail: [
+          { key: "Phone", value: "+1 555-0192" },
+          { key: "WiFi", value: "Guest123" },
+        ],
         fees: [
           { feeName: "VAT", type: "percent", amount: 15 },
           { feeName: "Service Charge", type: "fixed", amount: 2.5 },
@@ -456,6 +467,10 @@ export default function AdminPage() {
         expiredAt: rest.expiredAt ? rest.expiredAt.substring(0, 10) : "",
         status: rest.status,
         telegramChat: rest.telegramChat || "",
+        detail: (rest.detail || []).map((d) => ({
+          key: d.key,
+          value: d.value,
+        })),
         fees: (rest.config || []).map((c) => ({
           feeName: c.feeName,
           type: c.type,
@@ -1156,6 +1171,25 @@ export default function AdminPage() {
               value={formData.expiredAt}
               onChange={(e) => setFormData({ ...formData, expiredAt: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
+          {/* Interactive Contact & Amenities Key-Value Form */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <KeyValueBuilder
+              label="Contact & Amenities"
+              description="Store key-value information such as Phone, WiFi, Hours, Cuisine, etc."
+              keyPlaceholder="Key (e.g. Phone)"
+              valuePlaceholder="Value (e.g. +1 555-0192)"
+              items={formData.detail}
+              onChange={(detail) => setFormData((prev) => ({ ...prev, detail }))}
+              presets={[
+                { key: "Phone", label: "Phone", defaultValue: "+1 " },
+                { key: "WiFi", label: "WiFi", defaultValue: "" },
+                { key: "Hours", label: "Hours", defaultValue: "10:00 AM - 10:00 PM" },
+                { key: "Cuisine", label: "Cuisine", defaultValue: "Continental" },
+                { key: "Instagram", label: "Instagram", defaultValue: "@" },
+              ]}
             />
           </div>
 
