@@ -4,6 +4,7 @@ import React, { useState, useEffect, use, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Modal } from "@/components/Modal";
+import { DishImageGallery } from "@/components/DishImageGallery";
 import {
   UtensilsCrossed,
   ShoppingBag,
@@ -19,6 +20,7 @@ import {
   Info,
   Loader2,
   Sparkles,
+  Image as ImageIcon,
 } from "lucide-react";
 
 interface MenuItem {
@@ -518,9 +520,16 @@ export default function DinerMenuPage({
                       alt={dish.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <span className="absolute bottom-1 right-1 p-1 rounded-md bg-slate-950/60 text-white">
-                      <Sparkles className="w-3 h-3" />
-                    </span>
+                    {dish.imgUrls.length > 1 ? (
+                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1 shadow">
+                        <ImageIcon className="w-2.5 h-2.5" />
+                        {dish.imgUrls.length}
+                      </span>
+                    ) : (
+                      <span className="absolute bottom-1 right-1 p-1 rounded-md bg-slate-950/60 text-white">
+                        <Sparkles className="w-3 h-3" />
+                      </span>
+                    )}
                   </button>
                 ) : (
                   <div className="w-24 h-24 rounded-2xl bg-orange-50 dark:bg-orange-950/30 text-orange-600 flex items-center justify-center shrink-0">
@@ -749,16 +758,10 @@ export default function DinerMenuPage({
           maxWidth="max-w-lg"
         >
           <div className="space-y-4">
-            {selectedDish.imgUrls?.[0] && (
-              <div className="h-56 w-full rounded-2xl overflow-hidden bg-slate-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selectedDish.imgUrls[0]}
-                  alt={selectedDish.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+            <DishImageGallery
+              images={selectedDish.imgUrls || []}
+              dishName={selectedDish.name}
+            />
 
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-orange-600">

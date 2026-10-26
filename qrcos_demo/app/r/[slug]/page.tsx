@@ -4,6 +4,8 @@ import React, { useState, useEffect, use } from "react";
 import { Modal } from "@/components/Modal";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { LogoUpload } from "@/components/LogoUpload";
+import { MultiImageUpload } from "@/components/MultiImageUpload";
+import { DishImageGallery } from "@/components/DishImageGallery";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
 import {
@@ -24,6 +26,7 @@ import {
   Loader2,
   ExternalLink,
   Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 
 interface MenuItem {
@@ -79,12 +82,13 @@ export default function RestaurantOwnerPage({
   // Menu Modal State
   const [menuModalOpen, setMenuModalOpen] = useState(false);
   const [editingMenu, setEditingMenu] = useState<MenuItem | null>(null);
+  const [previewDish, setPreviewDish] = useState<MenuItem | null>(null);
   const [menuFormData, setMenuFormData] = useState({
     category: "Mains",
     name: "",
     description: "",
     price: "",
-    imageUrl: "",
+    imgUrls: [] as string[],
     details: [
       { key: "Calories", value: "500 kcal" },
       { key: "Vegetarian", value: "Yes" },
@@ -377,7 +381,7 @@ export default function RestaurantOwnerPage({
       name: "",
       description: "",
       price: "",
-      imageUrl: "",
+      imgUrls: [],
       details: [
         { key: "Calories", value: "500 kcal" },
         { key: "Spice", value: "Mild" },
@@ -399,7 +403,7 @@ export default function RestaurantOwnerPage({
       name: item.name,
       description: item.description || "",
       price: String(item.price),
-      imageUrl: item.imgUrls?.[0] || "",
+      imgUrls: item.imgUrls || [],
       details,
       visibility: item.visibility,
     });
@@ -429,7 +433,7 @@ export default function RestaurantOwnerPage({
         description: menuFormData.description.trim(),
         price: parseFloat(menuFormData.price) || 0,
         detail: parsedDetail,
-        imgUrls: menuFormData.imageUrl.trim() ? [menuFormData.imageUrl.trim()] : [],
+        imgUrls: menuFormData.imgUrls,
         visibility: menuFormData.visibility,
       };
 
@@ -835,12 +839,16 @@ export default function RestaurantOwnerPage({
                 >
                   <div>
                     {item.imgUrls?.[0] ? (
-                      <div className="h-44 w-full overflow-hidden bg-slate-100 relative">
+                      <div
+                        onClick={() => setPreviewDish(item)}
+                        className="h-44 w-full overflow-hidden bg-slate-100 relative cursor-pointer group/img"
+                        title="Click to preview photos"
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.imgUrls[0]}
                           alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
                         />
                         <span
                           className={`absolute top-3 right-3 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full backdrop-blur-md ${
@@ -851,6 +859,12 @@ export default function RestaurantOwnerPage({
                         >
                           {item.visibility}
                         </span>
+                        {item.imgUrls.length > 1 && (
+                          <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1 shadow">
+                            <ImageIcon className="w-2.5 h-2.5" />
+                            {item.imgUrls.length} photos
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <div className="h-32 w-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xs">
@@ -1235,12 +1249,12 @@ export default function RestaurantOwnerPage({
             />
           </div>
 
-          {/* Dish Photo with Cloudinary Upload */}
-          <LogoUpload
-            value={menuFormData.imageUrl}
-            onChange={(url) => setMenuFormData({ ...menuFormData, imageUrl: url })}
+          {/* Multiple Dish Photos with Cloudinary Upload */}
+          <MultiImageUpload
+            urls={menuFormData.imgUrls}
+            onChange={(urls) => setMenuFormData((prev) => ({ ...prev, imgUrls: urls }))}
             folder="qrcos/dishes"
-            label="Dish Photo (Upload to Cloudinary or paste URL)"
+            label="Dish Photos"
           />
 
           <div>
@@ -1373,6 +1387,71 @@ export default function RestaurantOwnerPage({
           </div>
         </form>
       </Modal>
+
+      {/* MODAL: Dish Photo Lightbox Preview for Owner */}
+      {previewDish && (
+        <Modal
+          isOpen={Boolean(previewDish)}
+          onClose={() => setPreviewDish(null)}
+          title={previewDish.name}
+          maxWidth="max-w-lg"
+        >
+          <div className="space-y-4">
+            <DishImageGallery
+              images={previewDish.imgUrls || []}
+              dishName={previewDish.name}
+            />
+
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-orange-600">
+                {previewDish.category}
+              </span>
+              <span className="text-lg font-extrabold font-mono text-slate-900 dark:text-white">
+                ${Number(previewDish.price).toFixed(2)}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {previewDish.description || "No description provided."}
+            </p>
+
+            {previewDish.detail?.length > 0 && (
+              <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <h5 className="text-[11px] font-bold uppercase text-slate-400">
+                  Dish Information
+                </h5>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {previewDish.detail.map((d, i) => (
+                    <div
+                      key={i}
+                      className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800"
+                    >
+                      <span className="text-slate-400 text-[10px] block">{d.key}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {d.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = previewDish;
+                  setPreviewDish(null);
+                  openEditMenuModal(target);
+                }}
+                className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs transition"
+              >
+                Edit Dish
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* MODAL 3: QR Studio */}
       {restaurant && (
