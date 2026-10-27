@@ -151,10 +151,10 @@ export default function MyHistoryPage() {
           </div>
           <div className="pt-2">
             <Link
-              href="/m/habesha-restaurant?table=4"
+              href="#"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition"
             >
-              Try Ordering at Habesha Restaurant (Table 4)
+              Try Ordering
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
