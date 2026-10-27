@@ -27,6 +27,7 @@ import {
   ExternalLink,
   Upload,
   Image as ImageIcon,
+  Tag,
 } from "lucide-react";
 
 interface MenuItem {
@@ -94,6 +95,13 @@ export default function RestaurantOwnerPage({
   });
   const [savingMenu, setSavingMenu] = useState(false);
   const [menuError, setMenuError] = useState("");
+  const [isNewCategory, setIsNewCategory] = useState(false);
+
+  // Derived Categories
+  const existingCategories = Array.from(
+    new Set(menus.map((m) => m.category?.trim()).filter((c): c is string => Boolean(c)))
+  );
+  const categories = ["All", ...existingCategories];
 
   // Orders State
   const [orders, setOrders] = useState<any[]>([]);
@@ -374,8 +382,15 @@ export default function RestaurantOwnerPage({
   // Menu Management
   const openCreateMenuModal = () => {
     setEditingMenu(null);
+    const initialCategory =
+      selectedCategory !== "All"
+        ? selectedCategory
+        : existingCategories.length === 1
+        ? existingCategories[0]
+        : "";
+    setIsNewCategory(existingCategories.length === 0);
     setMenuFormData({
-      category: selectedCategory !== "All" ? selectedCategory : "",
+      category: initialCategory,
       name: "",
       description: "",
       price: "",
@@ -393,6 +408,8 @@ export default function RestaurantOwnerPage({
       key: d.key,
       value: d.value,
     }));
+    const isExisting = existingCategories.includes(item.category);
+    setIsNewCategory(!isExisting && !!item.category);
     setMenuFormData({
       category: item.category,
       name: item.name,
@@ -557,7 +574,6 @@ export default function RestaurantOwnerPage({
     }
   };
 
-  const categories = ["All", ...Array.from(new Set(menus.map((m) => m.category)))];
   const filteredMenus =
     selectedCategory === "All"
       ? menus
@@ -1217,17 +1233,107 @@ export default function RestaurantOwnerPage({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Category *
-              </label>
-              <input
-                type="text"
-                required
-                value={menuFormData.category}
-                onChange={(e) => setMenuFormData({ ...menuFormData, category: e.target.value })}
-                placeholder="e.g. Starters, Mains, Drinks"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Category *
+                </label>
+                {existingCategories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !isNewCategory;
+                      setIsNewCategory(next);
+                      if (next) {
+                        if (existingCategories.includes(menuFormData.category)) {
+                          setMenuFormData({ ...menuFormData, category: "" });
+                        }
+                      } else {
+                        if (!existingCategories.includes(menuFormData.category)) {
+                          setMenuFormData({
+                            ...menuFormData,
+                            category: existingCategories[0] || "",
+                          });
+                        }
+                      }
+                    }}
+                    className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 flex items-center gap-1 transition-colors"
+                  >
+                    {isNewCategory ? (
+                      <>
+                        <Tag className="w-3 h-3" /> Select Existing
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-3 h-3" /> + New Category
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {!isNewCategory && existingCategories.length > 0 ? (
+                <div className="space-y-1.5">
+                  <select
+                    required
+                    value={menuFormData.category}
+                    onChange={(e) => {
+                      if (e.target.value === "__NEW__") {
+                        setIsNewCategory(true);
+                        setMenuFormData({ ...menuFormData, category: "" });
+                      } else {
+                        setMenuFormData({ ...menuFormData, category: e.target.value });
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="" disabled>
+                      -- Select Existing Category --
+                    </option>
+                    {existingCategories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                    <option value="__NEW__" className="text-orange-600 font-semibold">
+                      + Create New Category...
+                    </option>
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    required
+                    autoFocus={isNewCategory}
+                    value={menuFormData.category}
+                    onChange={(e) =>
+                      setMenuFormData({ ...menuFormData, category: e.target.value })
+                    }
+                    placeholder="e.g. Starters, Mains, Drinks"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  {existingCategories.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                        Or pick existing:
+                      </span>
+                      {existingCategories.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            setMenuFormData({ ...menuFormData, category: cat });
+                            setIsNewCategory(false);
+                          }}
+                          className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-orange-50 dark:bg-slate-800 dark:hover:bg-orange-950/40 text-slate-600 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 border border-slate-200 dark:border-slate-700 transition-colors"
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
