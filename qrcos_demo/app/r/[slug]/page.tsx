@@ -84,15 +84,12 @@ export default function RestaurantOwnerPage({
   const [editingMenu, setEditingMenu] = useState<MenuItem | null>(null);
   const [previewDish, setPreviewDish] = useState<MenuItem | null>(null);
   const [menuFormData, setMenuFormData] = useState({
-    category: "Mains",
+    category: "",
     name: "",
     description: "",
     price: "",
     imgUrls: [] as string[],
-    details: [
-      { key: "Calories", value: "500 kcal" },
-      { key: "Vegetarian", value: "Yes" },
-    ] as KeyValueItem[],
+    details: [] as KeyValueItem[],
     visibility: "public" as "public" | "private",
   });
   const [savingMenu, setSavingMenu] = useState(false);
@@ -378,15 +375,12 @@ export default function RestaurantOwnerPage({
   const openCreateMenuModal = () => {
     setEditingMenu(null);
     setMenuFormData({
-      category: selectedCategory !== "All" ? selectedCategory : "Mains",
+      category: selectedCategory !== "All" ? selectedCategory : "",
       name: "",
       description: "",
       price: "",
       imgUrls: [],
-      details: [
-        { key: "Calories", value: "500 kcal" },
-        { key: "Spice", value: "Mild" },
-      ],
+      details: [],
       visibility: "public",
     });
     setMenuError("");

@@ -81,10 +81,7 @@ export default function AdminPage() {
     status: "active" as "active" | "inactive" | "suspended",
     telegramChat: "",
     detail: [] as KeyValueItem[],
-    fees: [
-      { feeName: "VAT", type: "percent" as const, amount: 15 },
-      { feeName: "Service Charge", type: "fixed" as const, amount: 2.5 },
-    ] as FeeItem[],
+    fees: [] as FeeItem[],
   });
   const [savingRest, setSavingRest] = useState(false);
   const [restError, setRestError] = useState("");
@@ -443,14 +440,8 @@ export default function AdminPage() {
         expiredAt: "",
         status: "active",
         telegramChat: "", // No default telegram channel!
-        detail: [
-          { key: "Phone", value: "+1 555-0192" },
-          { key: "WiFi", value: "Guest123" },
-        ],
-        fees: [
-          { feeName: "VAT", type: "percent", amount: 15 },
-          { feeName: "Service Charge", type: "fixed", amount: 2.5 },
-        ],
+        detail: [],
+        fees: [],
       });
       setRestError("");
       setRestModalOpen(true);

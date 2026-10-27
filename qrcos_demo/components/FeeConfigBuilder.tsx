@@ -99,6 +99,14 @@ export function FeeConfigBuilder({ fees, onChange }: FeeConfigBuilderProps) {
       {fees.length === 0 ? (
         <div className="p-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 bg-slate-50/50 dark:bg-slate-800/20">
           No fees configured. Diners will only pay the menu item subtotal.
+          <br />
+          <button
+            type="button"
+            onClick={() => addFee("New Fee", "percent", 10)}
+            className="mt-2 text-xs text-orange-600 dark:text-orange-400 font-semibold hover:underline"
+          >
+            + Add first fee
+          </button>
         </div>
       ) : (
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
