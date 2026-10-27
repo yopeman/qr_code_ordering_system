@@ -31,10 +31,10 @@ export default function HomePage() {
     },
     {
       title: "Restaurant Owner Portal",
-      subtitle: "/r/bistro-delight",
+      subtitle: "/r/habesha-restaurant",
       description:
-        "Self-service onboarding with null-password initialization, menu CRUD with image galleries, dietary tags, fee config, and QR generator.",
-      href: "/r/bistro-delight",
+        "Self-service onboarding with null-password initialization, Ethiopian menu CRUD with image galleries, dietary tags, ETB fee config, and QR generator.",
+      href: "/r/habesha-restaurant",
       icon: Store,
       badge: "Self-Serve & Menu CRUD",
       color: "from-emerald-600 to-teal-600",
@@ -43,22 +43,22 @@ export default function HomePage() {
     },
     {
       title: "Public Diner Menu",
-      subtitle: "/m/bistro-delight?table=12",
+      subtitle: "/m/habesha-restaurant?table=4",
       description:
-        "Contactless mobile menu with table detection, image modal, dietary badges, interactive cart drawer, and 1-second live polling.",
-      href: "/m/bistro-delight?table=12",
+        "Contactless mobile menu with table detection, image modal, Ethiopian dietary badges, interactive cart drawer in ETB, and 1-second live polling.",
+      href: "/m/habesha-restaurant?table=4",
       icon: UtensilsCrossed,
-      badge: "Zero Auth • Table 12",
+      badge: "Zero Auth • Table 4",
       color: "from-orange-600 to-amber-600",
       accent: "text-orange-500",
       cta: "Browse Table Menu",
     },
     {
       title: "Kitchen Live Dispatcher",
-      subtitle: "/o/bistro-delight",
+      subtitle: "/o/habesha-restaurant",
       description:
         "Real-time kitchen display showing incoming tickets with one-click status transitions synced bidirectionally with Telegram inline keyboards.",
-      href: "/o/bistro-delight",
+      href: "/o/habesha-restaurant",
       icon: ChefHat,
       badge: "Real-Time Kitchen Sync",
       color: "from-rose-600 to-pink-600",
@@ -90,7 +90,7 @@ export default function HomePage() {
 
         <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           Contactless Dining, Seamless Kitchens,{" "}
-          <span className="bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-orange-600 via-amber-500 to-orange-500 bg-clip-text text-transparent">
             Instant Telegram Sync.
           </span>
         </h1>
@@ -106,7 +106,7 @@ export default function HomePage() {
               <CheckCircle2 className="w-4 h-4" /> Demo Onboarding Ready:
             </span>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Admin: <code className="font-mono bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">admin@qrcos.com</code> • Restaurant: <code className="font-mono bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">bistro-delight</code>
+              Admin: <code className="font-mono bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">admin@qrcos.com</code> • Restaurant: <code className="font-mono bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">habesha-restaurant</code>
             </p>
             <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
               Both accounts start with <i>null password</i> to demonstrate initial onboarding setup on first login!
@@ -133,7 +133,7 @@ export default function HomePage() {
               <div>
                 <div className="flex items-center justify-between mb-5">
                   <div
-                    className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${card.color} flex items-center justify-center text-white shadow-lg`}
+                    className={`w-12 h-12 rounded-2xl bg-linear-to-tr ${card.color} flex items-center justify-center text-white shadow-lg`}
                   >
                     <Icon className="w-6 h-6" />
                   </div>

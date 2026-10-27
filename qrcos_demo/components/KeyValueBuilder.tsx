@@ -30,8 +30,8 @@ export function KeyValueBuilder({
   onChange,
   label = "Custom Attributes & Details",
   description = "Define structured key-value specifications.",
-  keyPlaceholder = "Key (e.g. WiFi)",
-  valuePlaceholder = "Value (e.g. GuestPass123)",
+  keyPlaceholder = "Key (e.g. Phone, Location, WiFi)",
+  valuePlaceholder = "Value (e.g. Bole Medhanialem, +251 9...)",
   emptyText = "No key-value attributes added yet.",
   presets = [],
 }: KeyValueBuilderProps) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Plus, Trash2, Percent, DollarSign, Sparkles, Calculator } from "lucide-react";
+import { Plus, Trash2, Percent, Banknote, Sparkles, Calculator } from "lucide-react";
 
 export interface FeeItem {
   feeName: string;
@@ -29,8 +29,8 @@ export function FeeConfigBuilder({ fees, onChange }: FeeConfigBuilderProps) {
     onChange(fees.filter((_, i) => i !== index));
   };
 
-  // Preview calculation based on a sample $50.00 order
-  const sampleSubtotal = 50.0;
+  // Preview calculation based on a sample 500.00 ETB order
+  const sampleSubtotal = 500.0;
   const sampleFeeBreakdown = fees.map((f) => {
     const amt = parseFloat(String(f.amount)) || 0;
     const calc = f.type === "percent" ? (sampleSubtotal * amt) / 100 : amt;
@@ -46,7 +46,7 @@ export function FeeConfigBuilder({ fees, onChange }: FeeConfigBuilderProps) {
             Taxes, Fees & Service Charges
           </label>
           <p className="text-[11px] text-slate-400">
-            Automatically computed and added to diner checkout and receipts.
+            Automatically computed and added to diner checkout and receipts (in ETB).
           </p>
         </div>
 
@@ -74,24 +74,24 @@ export function FeeConfigBuilder({ fees, onChange }: FeeConfigBuilderProps) {
         </button>
         <button
           type="button"
-          onClick={() => addFee("Service Charge", "fixed", 2.5)}
+          onClick={() => addFee("Service Charge", "fixed", 50)}
           className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
         >
-          + Service Charge ($2.50)
+          + Service Charge (50 ETB)
         </button>
         <button
           type="button"
-          onClick={() => addFee("Sales Tax", "percent", 8.5)}
+          onClick={() => addFee("Municipality", "percent", 2)}
           className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
         >
-          + Sales Tax (8.5%)
+          + Municipality (2%)
         </button>
         <button
           type="button"
-          onClick={() => addFee("Eco / Packaging", "fixed", 1.0)}
+          onClick={() => addFee("Packaging", "fixed", 20)}
           className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
         >
-          + Packaging ($1.00)
+          + Packaging (20 ETB)
         </button>
       </div>
 
@@ -150,8 +150,8 @@ export function FeeConfigBuilder({ fees, onChange }: FeeConfigBuilderProps) {
                       : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <span>Fixed ($)</span>
+                  <Banknote className="w-3.5 h-3.5" />
+                  <span>Fixed (ETB)</span>
                 </button>
               </div>
 
@@ -163,11 +163,11 @@ export function FeeConfigBuilder({ fees, onChange }: FeeConfigBuilderProps) {
                   required
                   value={fee.amount}
                   onChange={(e) => updateFee(idx, "amount", e.target.value)}
-                  placeholder={fee.type === "percent" ? "15" : "2.50"}
-                  className="w-full pl-3 pr-7 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder={fee.type === "percent" ? "15" : "50"}
+                  className="w-full pl-3 pr-9 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <span className="absolute right-2.5 top-2 text-xs font-bold text-slate-400">
-                  {fee.type === "percent" ? "%" : "$"}
+                <span className="absolute right-2 top-2 text-[11px] font-bold text-slate-400">
+                  {fee.type === "percent" ? "%" : "ETB"}
                 </span>
               </div>
 
@@ -190,17 +190,17 @@ export function FeeConfigBuilder({ fees, onChange }: FeeConfigBuilderProps) {
         <div className="p-3 rounded-xl bg-orange-50/70 dark:bg-orange-950/30 border border-orange-200/80 dark:border-orange-900/40 text-[11px] text-slate-600 dark:text-slate-300 space-y-1">
           <div className="flex items-center gap-1.5 font-bold text-orange-700 dark:text-orange-400">
             <Calculator className="w-3.5 h-3.5" />
-            <span>Real-Time Receipt Calculation Example (on a $50.00 meal):</span>
+            <span>Real-Time Receipt Calculation Example (on a 500.00 ETB meal):</span>
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5">
-            <span>Subtotal: <b>$50.00</b></span>
+            <span>Subtotal: <b>500.00 ETB</b></span>
             {sampleFeeBreakdown.map((f, i) => (
               <span key={i}>
-                + {f.name}: <b>${f.calc.toFixed(2)}</b>
+                + {f.name}: <b>{f.calc.toFixed(2)} ETB</b>
               </span>
             ))}
             <span className="text-orange-600 dark:text-orange-400 font-extrabold">
-              = Total: ${sampleTotal.toFixed(2)}
+              = Total: {sampleTotal.toFixed(2)} ETB
             </span>
           </div>
         </div>

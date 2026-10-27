@@ -49,9 +49,9 @@ export function Navbar() {
   const navLinks = [
     { name: "Home", href: "/", icon: QrCode },
     { name: "Admin", href: "/admin", icon: Shield },
-    { name: "Restaurant", href: "/r/bistro-delight", icon: Store },
-    { name: "Diner Menu", href: "/m/bistro-delight?table=12", icon: UtensilsCrossed },
-    { name: "Kitchen", href: "/o/bistro-delight", icon: ChefHat },
+    { name: "Restaurant", href: "/r/habesha-restaurant", icon: Store },
+    { name: "Diner Menu", href: "/m/habesha-restaurant?table=4", icon: UtensilsCrossed },
+    { name: "Kitchen", href: "/o/habesha-restaurant", icon: ChefHat },
     { name: "My History", href: "/my-history", icon: History },
   ];
 
@@ -60,11 +60,11 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
             <QrCode className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 bg-clip-text text-transparent">
+            <span className="font-extrabold text-lg tracking-tight bg-linear-to-r from-orange-600 via-amber-600 to-orange-500 bg-clip-text text-transparent">
               QRCOS
             </span>
             <span className="text-[10px] uppercase tracking-widest font-bold ml-1.5 px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400">

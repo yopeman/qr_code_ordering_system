@@ -131,7 +131,7 @@ export default function KitchenOrderPage({
       {/* Kitchen Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-tr from-rose-600 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
             <ChefHat className="w-6 h-6" />
           </div>
           <div>
@@ -307,7 +307,7 @@ export default function KitchenOrderPage({
                           </span>
                         </div>
                         <span className="font-mono text-slate-500">
-                          ${Number(item.subtotalPrice).toFixed(2)}
+                          {Number(item.subtotalPrice).toFixed(2)} ETB
                         </span>
                       </div>
                     ))}
@@ -321,7 +321,7 @@ export default function KitchenOrderPage({
                       Total ({ticket.fees?.length || 0} fees incl.)
                     </span>
                     <span className="font-mono text-orange-600 text-sm">
-                      ${Number(ticket.totalPrice).toFixed(2)}
+                      {Number(ticket.totalPrice).toFixed(2)} ETB
                     </span>
                   </div>
 

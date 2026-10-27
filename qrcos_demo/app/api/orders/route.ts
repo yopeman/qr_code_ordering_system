@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     subtotal = Number(subtotal.toFixed(2));
 
-    // Calculate restaurant fees (e.g., VAT 15%, Service charge $2.00)
+    // Calculate restaurant fees (e.g., VAT 15%, Service charge 50 ETB)
     const fees: IOrderFee[] = [];
     let totalFees = 0;
 

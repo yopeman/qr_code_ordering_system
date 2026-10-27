@@ -889,7 +889,7 @@ export default function RestaurantOwnerPage({
                           {item.category}
                         </span>
                         <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                          ${Number(item.price).toFixed(2)}
+                          {Number(item.price).toFixed(2)} ETB
                         </span>
                       </div>
 
@@ -1049,7 +1049,7 @@ export default function RestaurantOwnerPage({
                         <span>
                           {it.name} <span className="text-slate-400">x{it.quantity}</span>
                         </span>
-                        <span className="font-mono">${Number(it.subtotalPrice).toFixed(2)}</span>
+                        <span className="font-mono">{Number(it.subtotalPrice).toFixed(2)} ETB</span>
                       </div>
                     ))}
                   </div>
@@ -1062,7 +1062,7 @@ export default function RestaurantOwnerPage({
 
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between font-bold text-xs">
                     <span>Total</span>
-                    <span className="font-mono text-orange-600">${Number(ord.totalPrice).toFixed(2)}</span>
+                    <span className="font-mono text-orange-600">{Number(ord.totalPrice).toFixed(2)} ETB</span>
                   </div>
 
                   {/* Status buttons */}
@@ -1187,11 +1187,12 @@ export default function RestaurantOwnerPage({
                 items={settingsFormData.details}
                 onChange={(details) => setSettingsFormData((prev) => ({ ...prev, details }))}
                 presets={[
-                  { key: "Phone", label: "Phone", defaultValue: "+1 " },
+                  { key: "Phone", label: "Phone", defaultValue: "+251 9" },
+                  { key: "Location", label: "Location", defaultValue: "Bole, Addis Ababa" },
+                  { key: "Hours", label: "Hours", defaultValue: "08:00 AM - 10:00 PM" },
+                  { key: "Cuisine", label: "Cuisine", defaultValue: "Ethiopian Traditional" },
                   { key: "WiFi", label: "WiFi", defaultValue: "" },
-                  { key: "Hours", label: "Hours", defaultValue: "11:00 AM - 11:00 PM" },
-                  { key: "Cuisine", label: "Cuisine", defaultValue: "" },
-                  { key: "Instagram", label: "Instagram", defaultValue: "@" },
+                  { key: "Telegram", label: "Telegram", defaultValue: "@" },
                 ]}
               />
             </div>
@@ -1309,7 +1310,7 @@ export default function RestaurantOwnerPage({
                     onChange={(e) =>
                       setMenuFormData({ ...menuFormData, category: e.target.value })
                     }
-                    placeholder="e.g. Starters, Mains, Drinks"
+                    placeholder="e.g. Traditional, Tibs, Fasting / Veg, Drinks"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                   {existingCategories.length > 0 && (
@@ -1338,7 +1339,7 @@ export default function RestaurantOwnerPage({
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Price ($ USD) *
+                Price (ETB) *
               </label>
               <input
                 type="number"
@@ -1346,7 +1347,7 @@ export default function RestaurantOwnerPage({
                 required
                 value={menuFormData.price}
                 onChange={(e) => setMenuFormData({ ...menuFormData, price: e.target.value })}
-                placeholder="15.50"
+                placeholder="450.00"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -1361,7 +1362,7 @@ export default function RestaurantOwnerPage({
               required
               value={menuFormData.name}
               onChange={(e) => setMenuFormData({ ...menuFormData, name: e.target.value })}
-              placeholder="e.g. Truffle Burrata Bruschetta"
+              placeholder="e.g. Special Tibs / ስፔሻል ጥብስ"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
@@ -1374,7 +1375,7 @@ export default function RestaurantOwnerPage({
               rows={2}
               value={menuFormData.description}
               onChange={(e) => setMenuFormData({ ...menuFormData, description: e.target.value })}
-              placeholder="Ingredients, culinary notes, preparation details..."
+              placeholder="Ingredients, niter kibbeh, spicy berbere, preparation notes..."
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
@@ -1412,10 +1413,9 @@ export default function RestaurantOwnerPage({
               onChange={(details) => setMenuFormData((prev) => ({ ...prev, details }))}
               presets={[
                 { key: "Calories", label: "Calories", defaultValue: "450 kcal" },
-                { key: "Spice", label: "Spice", defaultValue: "Medium" },
-                { key: "Allergens", label: "Allergens", defaultValue: "Contains Nuts" },
-                { key: "Vegan", label: "Vegan", defaultValue: "Yes" },
-                { key: "Gluten-Free", label: "Gluten-Free", defaultValue: "Yes" },
+                { key: "Spice", label: "Spice", defaultValue: "Medium (መካከለኛ)" },
+                { key: "Fasting", label: "Fasting (የጾም)", defaultValue: "Yes" },
+                { key: "Portion", label: "Portion", defaultValue: "1 Person" },
                 { key: "Prep Time", label: "Prep Time", defaultValue: "15 mins" },
               ]}
             />
@@ -1537,7 +1537,7 @@ export default function RestaurantOwnerPage({
                 {previewDish.category}
               </span>
               <span className="text-lg font-extrabold font-mono text-slate-900 dark:text-white">
-                ${Number(previewDish.price).toFixed(2)}
+                {Number(previewDish.price).toFixed(2)} ETB
               </span>
             </div>
 

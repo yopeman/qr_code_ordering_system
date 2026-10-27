@@ -391,7 +391,7 @@ export default function DinerMenuPage({
 
       {/* ACTIVE ORDER LIVE TRACKER BANNER (1-Second Polling) */}
       {activeOrderData && (
-        <div className="rounded-3xl bg-gradient-to-r from-orange-600 to-amber-600 p-6 text-white shadow-xl shadow-orange-500/20 space-y-4 animate-in fade-in duration-300">
+        <div className="rounded-3xl bg-linear-to-r from-orange-600 to-amber-600 p-6 text-white shadow-xl shadow-orange-500/20 space-y-4 animate-in fade-in duration-300">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="p-2 rounded-xl bg-white/20 backdrop-blur-md">
@@ -468,7 +468,7 @@ export default function DinerMenuPage({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search dishes, ingredients, drinks..."
+            placeholder="Search dishes, tibs, shiro, drinks... (ምግብ ይፈልጉ)"
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"
           />
         </div>
@@ -547,8 +547,8 @@ export default function DinerMenuPage({
                       >
                         {dish.name}
                       </button>
-                      <span className="font-extrabold text-sm text-slate-900 dark:text-white font-mono">
-                        ${Number(dish.price).toFixed(2)}
+                      <span className="font-extrabold text-sm text-slate-900 dark:text-white font-mono whitespace-nowrap">
+                        {Number(dish.price).toFixed(2)} ETB
                       </span>
                     </div>
 
@@ -624,7 +624,7 @@ export default function DinerMenuPage({
 
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-base font-mono">
-                ${grandTotal.toFixed(2)}
+                {grandTotal.toFixed(2)} ETB
               </span>
               <ShoppingBag className="w-5 h-5" />
             </div>
@@ -649,7 +649,7 @@ export default function DinerMenuPage({
                     {item.menu.name}
                   </h4>
                   <p className="text-xs text-slate-500 font-mono">
-                    ${Number(item.menu.price).toFixed(2)} each
+                    {Number(item.menu.price).toFixed(2)} ETB each
                   </p>
                 </div>
 
@@ -673,8 +673,8 @@ export default function DinerMenuPage({
                   </button>
                 </div>
 
-                <span className="font-bold text-sm font-mono text-slate-900 dark:text-white w-16 text-right">
-                  ${(item.menu.price * item.quantity).toFixed(2)}
+                <span className="font-bold text-sm font-mono text-slate-900 dark:text-white min-w-16 text-right whitespace-nowrap">
+                  {(item.menu.price * item.quantity).toFixed(2)} ETB
                 </span>
               </div>
             ))}
@@ -690,7 +690,7 @@ export default function DinerMenuPage({
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Alex"
+                placeholder="e.g. Abebe / Almaz"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -703,7 +703,7 @@ export default function DinerMenuPage({
                 type="text"
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="e.g. No onions, dressing on side"
+                placeholder="e.g. Extra karia, less spicy, well done (ቃሪያ በጎን)"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -713,7 +713,7 @@ export default function DinerMenuPage({
           <div className="space-y-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-xs">
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
               <span>Items Subtotal:</span>
-              <span className="font-mono font-medium">${subtotal.toFixed(2)}</span>
+              <span className="font-mono font-medium">{subtotal.toFixed(2)} ETB</span>
             </div>
 
             {calculatedFees.map((fee, idx) => (
@@ -721,13 +721,13 @@ export default function DinerMenuPage({
                 <span>
                   {fee.feeName} {fee.type === "percent" ? `(${fee.rate}%)` : ""}:
                 </span>
-                <span className="font-mono font-medium">${fee.amount.toFixed(2)}</span>
+                <span className="font-mono font-medium">{fee.amount.toFixed(2)} ETB</span>
               </div>
             ))}
 
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between font-extrabold text-sm text-slate-900 dark:text-white">
               <span>Grand Total:</span>
-              <span className="font-mono text-orange-600">${grandTotal.toFixed(2)}</span>
+              <span className="font-mono text-orange-600">{grandTotal.toFixed(2)} ETB</span>
             </div>
           </div>
 
@@ -744,7 +744,7 @@ export default function DinerMenuPage({
               </>
             ) : (
               <>
-                Confirm & Place Order (${grandTotal.toFixed(2)})
+                Confirm & Place Order ({grandTotal.toFixed(2)} ETB)
               </>
             )}
           </button>
@@ -770,7 +770,7 @@ export default function DinerMenuPage({
                 {selectedDish.category}
               </span>
               <span className="text-lg font-extrabold font-mono text-slate-900 dark:text-white">
-                ${Number(selectedDish.price).toFixed(2)}
+                {Number(selectedDish.price).toFixed(2)} ETB
               </span>
             </div>
 
@@ -807,7 +807,7 @@ export default function DinerMenuPage({
               }}
               className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition"
             >
-              Add to Basket (${Number(selectedDish.price).toFixed(2)})
+              Add to Basket ({Number(selectedDish.price).toFixed(2)} ETB)
             </button>
           </div>
         </Modal>
@@ -831,7 +831,7 @@ export default function DinerMenuPage({
             required
             value={tableInput}
             onChange={(e) => setTableInput(e.target.value)}
-            placeholder="e.g. 12"
+            placeholder="e.g. 4"
             className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
           <button

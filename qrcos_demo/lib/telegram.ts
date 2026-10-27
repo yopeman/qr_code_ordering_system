@@ -27,7 +27,7 @@ export function buildOrderReceipt(order: IOrder, restaurantName: string): string
   });
 
   const lines = (order.details || []).map((item) => {
-    return `• <b>${item.name}</b> x${item.quantity} — $${(item.subtotalPrice || item.unitPrice * item.quantity).toFixed(2)}`;
+    return `• <b>${item.name}</b> x${item.quantity} — ${(item.subtotalPrice || item.unitPrice * item.quantity).toFixed(2)} ETB`;
   });
 
   let feesBlock = "";
@@ -35,7 +35,7 @@ export function buildOrderReceipt(order: IOrder, restaurantName: string): string
     feesBlock =
       "\n" +
       order.fees
-        .map((f) => `• <i>${f.feeName}</i>: $${Number(f.calculatedAmount).toFixed(2)}`)
+        .map((f) => `• <i>${f.feeName}</i>: ${Number(f.calculatedAmount).toFixed(2)} ETB`)
         .join("\n");
   }
 
@@ -51,7 +51,7 @@ export function buildOrderReceipt(order: IOrder, restaurantName: string): string
     ...lines,
     feesBlock,
     `────────────────────`,
-    `💵 <b>Total:</b> $${Number(order.totalPrice).toFixed(2)}`,
+    `💵 <b>Total:</b> ${Number(order.totalPrice).toFixed(2)} ETB`,
     `📌 <b>Status:</b> ${STATUS_LABELS[order.status] || order.status}`,
     `🆔 <code>${order._id.toString()}</code>`,
   ]

@@ -102,7 +102,7 @@ export default function MyHistoryPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
             <History className="w-6 h-6" />
           </div>
           <div>
@@ -151,10 +151,10 @@ export default function MyHistoryPage() {
           </div>
           <div className="pt-2">
             <Link
-              href="/m/bistro-delight?table=12"
+              href="/m/habesha-restaurant?table=4"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition"
             >
-              Try Ordering at Bistro Delight (Table 12)
+              Try Ordering at Habesha Restaurant (Table 4)
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -259,7 +259,7 @@ export default function MyHistoryPage() {
                         <span>
                           {item.name} <span className="text-slate-400">x{item.quantity}</span>
                         </span>
-                        <span className="font-mono">${Number(item.subtotalPrice).toFixed(2)}</span>
+                        <span className="font-mono">{Number(item.subtotalPrice).toFixed(2)} ETB</span>
                       </div>
                     ))}
                   </div>
@@ -270,7 +270,7 @@ export default function MyHistoryPage() {
                   <div className="text-xs">
                     <span className="text-slate-400 mr-2">Grand Total:</span>
                     <span className="font-extrabold text-sm font-mono text-orange-600">
-                      ${Number(live?.totalPrice || ref.totalPrice).toFixed(2)}
+                      {Number(live?.totalPrice || ref.totalPrice).toFixed(2)} ETB
                     </span>
                   </div>
 

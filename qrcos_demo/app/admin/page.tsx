@@ -1077,7 +1077,7 @@ export default function AdminPage() {
                 required
                 value={formData.name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Bistro Delight & Grill"
+                placeholder="e.g. Habesha Traditional Restaurant"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -1098,7 +1098,7 @@ export default function AdminPage() {
                 required
                 value={formData.slug}
                 onChange={(e) => handleSlugChange(e.target.value)}
-                placeholder="e.g. bistro-delight-and-grill"
+                placeholder="e.g. habesha-traditional-restaurant"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -1112,7 +1112,7 @@ export default function AdminPage() {
               rows={2}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Short description of culinary style and specialty"
+              placeholder="Authentic Ethiopian dining, traditional tibs, and coffee ceremony"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
@@ -1174,17 +1174,17 @@ export default function AdminPage() {
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <KeyValueBuilder
               label="Contact & Amenities"
-              description="Store key-value information such as Phone, WiFi, Hours, Cuisine, etc."
+              description="Store key-value information such as Phone, Location, Hours, Cuisine, etc."
               keyPlaceholder="Key (e.g. Phone)"
-              valuePlaceholder="Value (e.g. +1 555-0192)"
+              valuePlaceholder="Value (e.g. +251 91 123 4567)"
               items={formData.detail}
               onChange={(detail) => setFormData((prev) => ({ ...prev, detail }))}
               presets={[
-                { key: "Phone", label: "Phone", defaultValue: "+1 " },
+                { key: "Phone", label: "Phone", defaultValue: "+251 9" },
+                { key: "Location", label: "Location", defaultValue: "Bole Medhanialem, Addis Ababa" },
+                { key: "Hours", label: "Hours", defaultValue: "08:00 AM - 10:00 PM" },
+                { key: "Cuisine", label: "Cuisine", defaultValue: "Ethiopian Traditional" },
                 { key: "WiFi", label: "WiFi", defaultValue: "" },
-                { key: "Hours", label: "Hours", defaultValue: "10:00 AM - 10:00 PM" },
-                { key: "Cuisine", label: "Cuisine", defaultValue: "Continental" },
-                { key: "Instagram", label: "Instagram", defaultValue: "@" },
               ]}
             />
           </div>
@@ -1264,7 +1264,7 @@ export default function AdminPage() {
                         <span>
                           {item.name} <span className="text-slate-400">x{item.quantity}</span>
                         </span>
-                        <span className="font-mono">${Number(item.subtotalPrice).toFixed(2)}</span>
+                        <span className="font-mono">{Number(item.subtotalPrice).toFixed(2)} ETB</span>
                       </div>
                     ))}
                   </div>
@@ -1273,7 +1273,7 @@ export default function AdminPage() {
                     <span className="text-slate-500 dark:text-slate-400 font-normal">
                       Total (inc. fees)
                     </span>
-                    <span className="text-orange-600 font-mono">${Number(ord.totalPrice).toFixed(2)}</span>
+                    <span className="text-orange-600 font-mono">{Number(ord.totalPrice).toFixed(2)} ETB</span>
                   </div>
                 </div>
               ))}
