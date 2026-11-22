@@ -54,10 +54,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ exists: false, error: "Restaurant not found" }, { status: 404 });
       }
 
+      const isExpired = Boolean(
+        restaurant.expiredAt && new Date(restaurant.expiredAt).getTime() < Date.now()
+      );
+
       return NextResponse.json({
         exists: true,
         restaurantName: restaurant.name,
         status: restaurant.status,
+        expiredAt: restaurant.expiredAt,
+        isExpired,
         needsPasswordSetup: restaurant.password === null || restaurant.password === "",
       });
     }
@@ -72,6 +78,13 @@ export async function POST(request: NextRequest) {
       const restaurant = await Restaurant.findOne({ slug: normalizedSlug });
       if (!restaurant) {
         return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+      }
+
+      if (restaurant.status === "suspended") {
+        return NextResponse.json(
+          { error: "Restaurant account is suspended. Please contact platform support." },
+          { status: 403 }
+        );
       }
 
       if (restaurant.password !== null && restaurant.password !== "") {
@@ -118,7 +131,10 @@ export async function POST(request: NextRequest) {
       }
 
       if (restaurant.status === "suspended") {
-        return NextResponse.json({ error: "Restaurant account is suspended" }, { status: 403 });
+        return NextResponse.json(
+          { error: "Restaurant account is suspended. Please contact platform support." },
+          { status: 403 }
+        );
       }
 
       if (restaurant.password === null || restaurant.password === "") {

@@ -27,6 +27,10 @@ export async function GET(
 
     const orders = await Order.find(query).sort({ createdAt: -1 }).limit(100);
 
+    const isExpired = Boolean(
+      restaurant.expiredAt && new Date(restaurant.expiredAt).getTime() < Date.now()
+    );
+
     return NextResponse.json({
       ok: true,
       restaurant: {
@@ -34,6 +38,9 @@ export async function GET(
         name: restaurant.name,
         slug: restaurant.slug,
         logoUrl: restaurant.logoUrl,
+        status: restaurant.status,
+        expiredAt: restaurant.expiredAt,
+        isExpired,
       },
       orders,
     });

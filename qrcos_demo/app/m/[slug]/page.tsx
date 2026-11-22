@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Modal } from "@/components/Modal";
 import { DishImageGallery } from "@/components/DishImageGallery";
+import { checkRestaurantAccess } from "@/lib/utils";
 import {
   UtensilsCrossed,
   ShoppingBag,
@@ -47,6 +48,7 @@ interface RestaurantInfo {
   detail: { key: string; value: string }[];
   logoUrl: string;
   status: string;
+  expiredAt?: string | null;
   config: { feeName: string; type: "percent" | "fixed"; amount: number }[];
 }
 
@@ -81,6 +83,9 @@ export default function DinerMenuPage({
 
   // Dish Lightbox Modal
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
+
+  // Computed Restaurant Access Status (checks status and expiredAt)
+  const access = checkRestaurantAccess(restaurant?.status, restaurant?.expiredAt);
 
   // Active Placed Order & 1s Polling
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
@@ -157,6 +162,10 @@ export default function DinerMenuPage({
   };
 
   const addToCart = (menu: MenuItem) => {
+    if (!access.isOperational) {
+      alert(access.message || "This restaurant is currently not accepting orders.");
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((item) => item.menu._id === menu._id);
       if (existing) {
@@ -217,6 +226,11 @@ export default function DinerMenuPage({
 
   // Submit Order
   const handlePlaceOrder = async () => {
+    if (!access.isOperational) {
+      alert(access.message || "This restaurant is currently not accepting orders.");
+      return;
+    }
+
     if (!table) {
       setTableModalOpen(true);
       return;
@@ -340,8 +354,18 @@ export default function DinerMenuPage({
                 <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                   {restaurant.name}
                 </h1>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                  Open
+                <span
+                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                    access.badgeVariant === "active"
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                      : access.badgeVariant === "suspended"
+                      ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                      : access.badgeVariant === "expired"
+                      ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                  }`}
+                >
+                  {access.statusLabel}
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
@@ -388,6 +412,25 @@ export default function DinerMenuPage({
           </div>
         )}
       </div>
+
+      {/* Notice Banner when Restaurant is Inactive, Suspended or Expired */}
+      {!access.isOperational && (
+        <div
+          className={`p-4 rounded-2xl border flex items-start gap-3 shadow-xs ${
+            access.reason === "suspended"
+              ? "bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-200"
+              : access.reason === "expired"
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200"
+              : "bg-slate-500/10 border-slate-500/30 text-slate-900 dark:text-slate-200"
+          }`}
+        >
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-current" />
+          <div>
+            <h3 className="text-sm font-bold">Ordering Currently Unavailable</h3>
+            <p className="text-xs mt-0.5 opacity-90">{access.message}</p>
+          </div>
+        </div>
+      )}
 
       {/* ACTIVE ORDER LIVE TRACKER BANNER (1-Second Polling) */}
       {activeOrderData && (
@@ -563,7 +606,11 @@ export default function DinerMenuPage({
                       {dish.category}
                     </span>
 
-                    {inCart > 0 ? (
+                    {!access.isOperational ? (
+                      <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-semibold">
+                        Unavailable
+                      </span>
+                    ) : inCart > 0 ? (
                       <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-950/50 p-1 rounded-xl border border-orange-200 dark:border-orange-800">
                         <button
                           type="button"
@@ -731,10 +778,16 @@ export default function DinerMenuPage({
             </div>
           </div>
 
+          {!access.isOperational && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs">
+              {access.message}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handlePlaceOrder}
-            disabled={placingOrder || cart.length === 0}
+            disabled={!access.isOperational || placingOrder || cart.length === 0}
             className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-xl shadow-orange-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {placingOrder ? (
@@ -742,6 +795,8 @@ export default function DinerMenuPage({
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Dispatching to Kitchen...
               </>
+            ) : !access.isOperational ? (
+              "Ordering Unavailable"
             ) : (
               <>
                 Confirm & Place Order ({grandTotal.toFixed(2)} ETB)
@@ -801,13 +856,16 @@ export default function DinerMenuPage({
 
             <button
               type="button"
+              disabled={!access.isOperational}
               onClick={() => {
                 addToCart(selectedDish);
                 setSelectedDish(null);
               }}
-              className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition"
+              className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add to Basket ({Number(selectedDish.price).toFixed(2)} ETB)
+              {access.isOperational
+                ? `Add to Basket (${Number(selectedDish.price).toFixed(2)} ETB)`
+                : "Ordering Unavailable"}
             </button>
           </div>
         </Modal>

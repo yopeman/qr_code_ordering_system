@@ -17,7 +17,11 @@ export async function GET(
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, restaurant });
+    const isExpired = Boolean(
+      restaurant.expiredAt && new Date(restaurant.expiredAt).getTime() < Date.now()
+    );
+
+    return NextResponse.json({ ok: true, restaurant, isExpired });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -48,6 +52,13 @@ export async function PUT(
     const restaurant = await Restaurant.findOne({ slug: cleanSlug });
     if (!restaurant) {
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    }
+
+    if (restaurant.status === "suspended") {
+      return NextResponse.json(
+        { error: "Restaurant is suspended. Settings cannot be modified." },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();

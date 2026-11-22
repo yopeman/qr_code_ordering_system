@@ -23,3 +23,74 @@ export function formatETB(amount: number | string | null | undefined): string {
   const num = typeof amount === "number" ? amount : parseFloat(String(amount || 0)) || 0;
   return `${num.toFixed(2)} ETB`;
 }
+
+export type RestaurantStatus = "active" | "inactive" | "suspended";
+
+export interface RestaurantAccessCheck {
+  isOperational: boolean; // true ONLY if active AND not expired
+  isExpired: boolean;
+  status: RestaurantStatus;
+  statusLabel: string;
+  badgeVariant: "active" | "inactive" | "suspended" | "expired";
+  reason?: "inactive" | "suspended" | "expired";
+  message: string;
+}
+
+export function isRestaurantExpired(expiredAt: Date | string | null | undefined): boolean {
+  if (!expiredAt) return false;
+  return new Date(expiredAt).getTime() < Date.now();
+}
+
+export function checkRestaurantAccess(
+  status: string = "active",
+  expiredAt?: Date | string | null
+): RestaurantAccessCheck {
+  const isExpired = isRestaurantExpired(expiredAt);
+  const normStatus = (status || "active") as RestaurantStatus;
+
+  if (normStatus === "suspended") {
+    return {
+      isOperational: false,
+      isExpired,
+      status: normStatus,
+      statusLabel: "Suspended",
+      badgeVariant: "suspended",
+      reason: "suspended",
+      message: "This restaurant is currently suspended by the platform administrator.",
+    };
+  }
+
+  if (isExpired) {
+    const dateStr = expiredAt ? new Date(expiredAt).toLocaleDateString() : "";
+    return {
+      isOperational: false,
+      isExpired: true,
+      status: normStatus,
+      statusLabel: "Subscription Expired",
+      badgeVariant: "expired",
+      reason: "expired",
+      message: `This restaurant's subscription expired on ${dateStr}.`,
+    };
+  }
+
+  if (normStatus === "inactive") {
+    return {
+      isOperational: false,
+      isExpired: false,
+      status: normStatus,
+      statusLabel: "Inactive",
+      badgeVariant: "inactive",
+      reason: "inactive",
+      message: "This restaurant is currently inactive and not accepting orders.",
+    };
+  }
+
+  return {
+    isOperational: true,
+    isExpired: false,
+    status: "active",
+    statusLabel: "Active",
+    badgeVariant: "active",
+    message: "Open for orders",
+  };
+}

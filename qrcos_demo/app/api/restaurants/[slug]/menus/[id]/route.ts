@@ -35,6 +35,13 @@ export async function PUT(
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
+    if (restaurant.status === "suspended") {
+      return NextResponse.json(
+        { error: "Restaurant account is suspended. Menu changes are disabled." },
+        { status: 403 }
+      );
+    }
+
     const menu = await Menu.findOne({ _id: id, restaurantId: restaurant._id });
     if (!menu) {
       return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
@@ -81,6 +88,13 @@ export async function DELETE(
     const restaurant = await Restaurant.findOne({ slug: cleanSlug });
     if (!restaurant) {
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    }
+
+    if (restaurant.status === "suspended") {
+      return NextResponse.json(
+        { error: "Restaurant account is suspended. Menu changes are disabled." },
+        { status: 403 }
+      );
     }
 
     const menu = await Menu.findOneAndDelete({ _id: id, restaurantId: restaurant._id });

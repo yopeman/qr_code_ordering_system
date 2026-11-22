@@ -807,7 +807,14 @@ export default function AdminPage() {
                   {rest.expiredAt && (
                     <div className="flex items-center justify-between">
                       <span>Expires:</span>
-                      <span>{new Date(rest.expiredAt).toLocaleDateString()}</span>
+                      <span className={new Date(rest.expiredAt).getTime() < Date.now() ? "text-rose-600 font-semibold inline-flex items-center gap-1" : ""}>
+                        {new Date(rest.expiredAt).toLocaleDateString()}
+                        {new Date(rest.expiredAt).getTime() < Date.now() && (
+                          <span className="text-[9px] bg-rose-500/10 text-rose-600 px-1 py-0.2 rounded font-bold uppercase">
+                            Expired
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -935,7 +942,18 @@ export default function AdminPage() {
                       {rest.telegramChat || "Default"}
                     </td>
                     <td className="py-3 px-4">
-                      {rest.expiredAt ? new Date(rest.expiredAt).toLocaleDateString() : "Never"}
+                      {rest.expiredAt ? (
+                        <span className={new Date(rest.expiredAt).getTime() < Date.now() ? "text-rose-600 font-semibold inline-flex items-center gap-1" : ""}>
+                          {new Date(rest.expiredAt).toLocaleDateString()}
+                          {new Date(rest.expiredAt).getTime() < Date.now() && (
+                            <span className="text-[9px] bg-rose-500/10 text-rose-600 px-1.5 py-0.5 rounded font-bold uppercase">
+                              Expired
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        "Never"
+                      )}
                     </td>
                     <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
                       <button

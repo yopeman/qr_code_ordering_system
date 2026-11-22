@@ -8,6 +8,7 @@ import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { DishImageGallery } from "@/components/DishImageGallery";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
+import { checkRestaurantAccess } from "@/lib/utils";
 import {
   Store,
   UtensilsCrossed,
@@ -76,6 +77,7 @@ export default function RestaurantOwnerPage({
 
   // Restaurant & Menu Data
   const [restaurant, setRestaurant] = useState<RestaurantProfile | null>(null);
+  const access = checkRestaurantAccess(restaurant?.status, restaurant?.expiredAt);
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [loadingMenus, setLoadingMenus] = useState(false);
@@ -160,6 +162,11 @@ export default function RestaurantOwnerPage({
 
       if (!checkRes.ok) {
         setAuthError(checkData.error || "Restaurant not found");
+        return;
+      }
+
+      if (checkData.status === "suspended") {
+        setAuthError("This restaurant account has been suspended by the platform administrator. Please contact support.");
         return;
       }
 
@@ -703,13 +710,34 @@ export default function RestaurantOwnerPage({
           )}
 
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
                 {restaurant?.name}
               </h1>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                {restaurant?.status}
+              <span
+                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${
+                  access.badgeVariant === "active"
+                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                    : access.badgeVariant === "suspended"
+                    ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                    : access.badgeVariant === "expired"
+                    ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                    : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                }`}
+              >
+                {access.statusLabel}
               </span>
+              {restaurant?.expiredAt && (
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    access.isExpired
+                      ? "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                  }`}
+                >
+                  {access.isExpired ? "Expired" : "Expires"}: {new Date(restaurant.expiredAt).toLocaleDateString()}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               <span>Owner Dashboard</span>
@@ -755,6 +783,33 @@ export default function RestaurantOwnerPage({
           </button>
         </div>
       </div>
+
+      {/* Operational Notice Banner if Inactive, Suspended or Expired */}
+      {!access.isOperational && (
+        <div
+          className={`p-4 sm:p-5 rounded-2xl flex items-start gap-3.5 border shadow-xs ${
+            access.reason === "suspended"
+              ? "bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-200"
+              : access.reason === "expired"
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200"
+              : "bg-slate-500/10 border-slate-500/30 text-slate-900 dark:text-slate-200"
+          }`}
+        >
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-current" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold">
+              {access.reason === "suspended"
+                ? "Restaurant Account Suspended"
+                : access.reason === "expired"
+                ? "Subscription Plan Expired"
+                : "Restaurant Currently Inactive"}
+            </h3>
+            <p className="text-xs opacity-90 leading-relaxed">
+              {access.message} Customers scanning table QR codes cannot place orders. Please contact platform administration to renew your subscription or restore service.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 sm:gap-6 overflow-x-auto no-scrollbar whitespace-nowrap">
@@ -1126,6 +1181,36 @@ export default function RestaurantOwnerPage({
               <span>Settings updated successfully!</span>
             </div>
           )}
+
+          {/* Account Status & Subscription Expiry Card */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Operational Status</span>
+              <span
+                className={`text-[11px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
+                  access.badgeVariant === "active"
+                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                    : access.badgeVariant === "suspended"
+                    ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                    : access.badgeVariant === "expired"
+                    ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                    : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                }`}
+              >
+                {access.statusLabel}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Subscription Expiry</span>
+              <span className="text-xs font-mono font-medium text-slate-800 dark:text-slate-200">
+                {restaurant?.expiredAt ? new Date(restaurant.expiredAt).toLocaleDateString() : "No Expiry (Lifetime)"}
+                {access.isExpired && " (Expired)"}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+              * Status and expiry are managed by platform administrators.
+            </p>
+          </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-4">
             <div>

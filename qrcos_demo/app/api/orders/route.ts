@@ -4,6 +4,7 @@ import { Restaurant } from "@/lib/models/Restaurant";
 import { Menu } from "@/lib/models/Menu";
 import { Order, IOrderItem, IOrderFee } from "@/lib/models/Order";
 import { sendTelegramOrder } from "@/lib/telegram";
+import { checkRestaurantAccess } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,9 +28,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
-    if (restaurant.status !== "active") {
+    const access = checkRestaurantAccess(restaurant.status, restaurant.expiredAt);
+    if (!access.isOperational) {
       return NextResponse.json(
-        { error: "Restaurant is currently not accepting orders" },
+        { error: access.message },
         { status: 403 }
       );
     }

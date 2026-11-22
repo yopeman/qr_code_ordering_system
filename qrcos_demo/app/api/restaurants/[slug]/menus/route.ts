@@ -70,6 +70,13 @@ export async function POST(
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
+    if (restaurant.status === "suspended") {
+      return NextResponse.json(
+        { error: "Restaurant account is suspended. Menu changes are disabled." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { category, name, description, price, detail, imgUrls, visibility } = body;
 

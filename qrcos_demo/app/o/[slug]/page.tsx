@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Loader2,
 } from "lucide-react";
+import { checkRestaurantAccess } from "@/lib/utils";
 
 interface OrderTicket {
   _id: string;
@@ -39,12 +40,18 @@ export default function KitchenOrderPage({
   const { slug } = use(params);
 
   const [restaurantName, setRestaurantName] = useState(slug);
+  const [restaurantMeta, setRestaurantMeta] = useState<{
+    status?: string;
+    expiredAt?: string | null;
+  } | null>(null);
   const [orders, setOrders] = useState<OrderTicket[]>([]);
   const [activeFilter, setActiveFilter] = useState<"all" | "pending" | "preparing" | "completed">("all");
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const lastOrderCountRef = useRef(0);
+
+  const access = checkRestaurantAccess(restaurantMeta?.status, restaurantMeta?.expiredAt);
 
   const fetchOrders = async () => {
     try {
@@ -55,6 +62,12 @@ export default function KitchenOrderPage({
         setOrders(incomingOrders);
         if (data.restaurant?.name) {
           setRestaurantName(data.restaurant.name);
+        }
+        if (data.restaurant) {
+          setRestaurantMeta({
+            status: data.restaurant.status,
+            expiredAt: data.restaurant.expiredAt,
+          });
         }
 
         // Check for new incoming pending orders to play sound chime
@@ -143,6 +156,19 @@ export default function KitchenOrderPage({
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                 Live 1s Polling
               </span>
+              <span
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                  access.badgeVariant === "active"
+                    ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                    : access.badgeVariant === "suspended"
+                    ? "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20"
+                    : access.badgeVariant === "expired"
+                    ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20"
+                    : "text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/20"
+                }`}
+              >
+                {access.statusLabel}
+              </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Auto-syncs with customer orders and Telegram kitchen channel callbacks
@@ -173,6 +199,24 @@ export default function KitchenOrderPage({
           </Link>
         </div>
       </div>
+
+      {/* Notice Banner when Restaurant is Inactive, Suspended or Expired */}
+      {!access.isOperational && (
+        <div
+          className={`p-4 rounded-2xl flex items-center gap-3 border ${
+            access.reason === "suspended"
+              ? "bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-200"
+              : access.reason === "expired"
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-200"
+              : "bg-slate-500/10 border-slate-500/30 text-slate-800 dark:text-slate-200"
+          }`}
+        >
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <div className="text-xs">
+            <span className="font-bold">Notice:</span> {access.message} The kitchen cannot receive new orders while the restaurant is not active.
+          </div>
+        </div>
+      )}
 
       {/* Filter Tabs & Counts */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
