@@ -1314,7 +1314,7 @@ export default function AdminPage() {
           restaurantName={selectedRestForQR.name}
           restaurantSlug={selectedRestForQR.slug}
           logoUrl={selectedRestForQR.logoUrl}
-          defaultTable="12"
+          defaultTable="1"
         />
       )}
     </div>

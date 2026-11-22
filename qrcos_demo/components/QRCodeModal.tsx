@@ -20,7 +20,7 @@ export function QRCodeModal({
   restaurantName,
   restaurantSlug,
   logoUrl,
-  defaultTable = "12",
+  defaultTable = "1",
 }: QRCodeModalProps) {
   const [table, setTable] = useState(defaultTable);
   const [generating, setGenerating] = useState(false);

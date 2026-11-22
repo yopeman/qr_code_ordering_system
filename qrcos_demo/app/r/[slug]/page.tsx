@@ -1591,7 +1591,7 @@ export default function RestaurantOwnerPage({
           restaurantName={restaurant.name}
           restaurantSlug={restaurant.slug}
           logoUrl={restaurant.logoUrl}
-          defaultTable="12"
+          defaultTable="1"
         />
       )}
     </div>
