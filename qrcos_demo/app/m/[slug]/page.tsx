@@ -64,7 +64,7 @@ export default function DinerMenuPage({
   const queryTable = searchParams.get("table") || "";
   const [table, setTable] = useState(queryTable);
   const [tableModalOpen, setTableModalOpen] = useState(false);
-  const [tableInput, setTableInput] = useState(queryTable || "12");
+  const [tableInput, setTableInput] = useState(queryTable || "1");
 
   // Restaurant & Menu Data
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null);
@@ -355,15 +355,14 @@ export default function DinerMenuPage({
                   {restaurant.name}
                 </h1>
                 <span
-                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                    access.badgeVariant === "active"
+                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${access.badgeVariant === "active"
                       ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                       : access.badgeVariant === "suspended"
-                      ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
-                      : access.badgeVariant === "expired"
-                      ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                      : "bg-slate-500/10 text-slate-600 border-slate-500/20"
-                  }`}
+                        ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                        : access.badgeVariant === "expired"
+                          ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                    }`}
                 >
                   {access.statusLabel}
                 </span>
@@ -379,7 +378,7 @@ export default function DinerMenuPage({
             <button
               type="button"
               onClick={() => {
-                setTableInput(table || "12");
+                setTableInput(table || "1");
                 setTableModalOpen(true);
               }}
               className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/80 text-xs font-bold hover:scale-105 transition shadow-sm"
@@ -416,13 +415,12 @@ export default function DinerMenuPage({
       {/* Notice Banner when Restaurant is Inactive, Suspended or Expired */}
       {!access.isOperational && (
         <div
-          className={`p-4 rounded-2xl border flex items-start gap-3 shadow-xs ${
-            access.reason === "suspended"
+          className={`p-4 rounded-2xl border flex items-start gap-3 shadow-xs ${access.reason === "suspended"
               ? "bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-200"
               : access.reason === "expired"
-              ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200"
-              : "bg-slate-500/10 border-slate-500/30 text-slate-900 dark:text-slate-200"
-          }`}
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200"
+                : "bg-slate-500/10 border-slate-500/30 text-slate-900 dark:text-slate-200"
+            }`}
         >
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-current" />
           <div>
@@ -468,34 +466,31 @@ export default function DinerMenuPage({
           {/* Stepper Progress */}
           <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold pt-2">
             <div
-              className={`p-2.5 rounded-xl transition ${
-                activeOrderData.status === "pending" ||
-                activeOrderData.status === "preparing" ||
-                activeOrderData.status === "completed"
+              className={`p-2.5 rounded-xl transition ${activeOrderData.status === "pending" ||
+                  activeOrderData.status === "preparing" ||
+                  activeOrderData.status === "completed"
                   ? "bg-white text-orange-700 shadow-md"
                   : "bg-white/10 text-white/60"
-              }`}
+                }`}
             >
               1. ⏳ Pending
             </div>
 
             <div
-              className={`p-2.5 rounded-xl transition ${
-                activeOrderData.status === "preparing" ||
-                activeOrderData.status === "completed"
+              className={`p-2.5 rounded-xl transition ${activeOrderData.status === "preparing" ||
+                  activeOrderData.status === "completed"
                   ? "bg-white text-orange-700 shadow-md"
                   : "bg-white/10 text-white/60"
-              }`}
+                }`}
             >
               2. 👨‍🍳 Preparing
             </div>
 
             <div
-              className={`p-2.5 rounded-xl transition ${
-                activeOrderData.status === "completed"
+              className={`p-2.5 rounded-xl transition ${activeOrderData.status === "completed"
                   ? "bg-white text-emerald-700 shadow-md"
                   : "bg-white/10 text-white/60"
-              }`}
+                }`}
             >
               3. ✅ Ready
             </div>
@@ -523,11 +518,10 @@ export default function DinerMenuPage({
               key={cat}
               type="button"
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                activeCategory === cat
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat
                   ? "bg-orange-600 text-white shadow-md shadow-orange-500/20 scale-[1.02]"
                   : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100"
-              }`}
+                }`}
             >
               {cat}
             </button>

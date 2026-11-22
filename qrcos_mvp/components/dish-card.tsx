@@ -29,11 +29,10 @@ export function DishCard({
 }) {
   return (
     <article
-      className={`group flex flex-col overflow-hidden rounded-2xl border bg-white transition ${
-        dish.available
+      className={`group flex flex-col overflow-hidden rounded-2xl border bg-white transition ${dish.available
           ? "border-stone-200 hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-900/5 dark:border-stone-800 dark:bg-stone-900 dark:hover:border-emerald-600"
           : "border-stone-200 opacity-70 dark:border-stone-800"
-      }`}
+        }`}
     >
       <div className="relative flex h-36 items-center justify-center bg-gradient-to-br from-amber-50 to-emerald-50 dark:from-stone-800 dark:to-stone-900">
         <span className="text-6xl drop-shadow-sm transition-transform duration-300 group-hover:scale-110">
@@ -79,7 +78,7 @@ export function DishCard({
               strokeWidth={2}
               aria-hidden
             >
-              <circle cx="12" cy="12" r="9" />
+              <circle cx="1" cy="1" r="9" />
               <path d="M12 7v5l3 2" strokeLinecap="round" />
             </svg>
             {dish.prepMinutes} min
