@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import { Restaurant } from "@/lib/models/Restaurant";
 import "@/lib/models/Admin";
 import { verifyAdminToken, ADMIN_COOKIE_NAME } from "@/lib/auth";
+import { slugify } from "@/lib/utils";
 
 function checkAdmin(request: NextRequest) {
   const token =
@@ -39,16 +40,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, slug, description, detail, logoUrl, expiredAt, status, telegramChat, config } = body;
+    let { name, slug, description, detail, logoUrl, expiredAt, status, telegramChat, config } = body;
 
-    if (!name || !slug) {
-      return NextResponse.json({ error: "Name and Slug are required" }, { status: 400 });
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: "Restaurant name is required" }, { status: 400 });
     }
 
-    const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-    const existing = await Restaurant.findOne({ slug: cleanSlug });
-    if (existing) {
-      return NextResponse.json({ error: "A restaurant with this slug already exists" }, { status: 409 });
+    const rawSlug = slug && slug.trim() ? slug : slugify(name);
+    let baseSlug = rawSlug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    if (!baseSlug) baseSlug = "restaurant";
+
+    // Auto-resolve any slug collision so "A restaurant with this slug already exists" is completely avoided
+    let cleanSlug = baseSlug;
+    let counter = 1;
+    while (await Restaurant.findOne({ slug: cleanSlug })) {
+      cleanSlug = `${baseSlug}-${counter}`;
+      counter++;
     }
 
     const restaurant = await Restaurant.create({

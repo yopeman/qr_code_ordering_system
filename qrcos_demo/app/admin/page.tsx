@@ -72,7 +72,6 @@ export default function AdminPage() {
   // Restaurant Edit/Create Modal
   const [restModalOpen, setRestModalOpen] = useState(false);
   const [editingRest, setEditingRest] = useState<RestaurantItem | null>(null);
-  const [isSlugManual, setIsSlugManual] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -361,13 +360,8 @@ export default function AdminPage() {
       setFormData((prev) => ({
         ...prev,
         name,
-        slug: isSlugManual ? prev.slug : slugify(name),
+        slug: editingRest ? prev.slug : slugify(name),
       }));
-    };
-
-    const handleSlugChange = (slug: string) => {
-      setIsSlugManual(true);
-      setFormData((prev) => ({ ...prev, slug }));
     };
 
     // Save restaurant (create or edit)
@@ -375,8 +369,8 @@ export default function AdminPage() {
       e.preventDefault();
       setRestError("");
 
-      if (!formData.name.trim() || !formData.slug.trim()) {
-        setRestError("Name and Slug are required");
+      if (!formData.name.trim()) {
+        setRestError("Restaurant name is required");
         return;
       }
 
@@ -432,7 +426,6 @@ export default function AdminPage() {
 
     const openCreateModal = () => {
       setEditingRest(null);
-      setIsSlugManual(false);
       setFormData({
         name: "",
         slug: "",
@@ -450,7 +443,6 @@ export default function AdminPage() {
 
     const openEditModal = (rest: RestaurantItem) => {
       setEditingRest(rest);
-      setIsSlugManual(true);
       setFormData({
         name: rest.name,
         slug: rest.slug,
@@ -1109,41 +1101,18 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Restaurant Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Habesha Traditional Restaurant"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                  URL Slug *
-                </label>
-                {!isSlugManual && formData.slug && (
-                  <span className="text-[10px] uppercase font-bold text-orange-600 bg-orange-50 dark:bg-orange-950/60 px-1.5 py-0.5 rounded">
-                    Auto-slugified
-                  </span>
-                )}
-              </div>
-              <input
-                type="text"
-                required
-                value={formData.slug}
-                onChange={(e) => handleSlugChange(e.target.value)}
-                placeholder="e.g. habesha-traditional-restaurant"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Restaurant Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="e.g. Habesha Traditional Restaurant"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
           </div>
 
           <div>

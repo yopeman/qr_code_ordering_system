@@ -62,13 +62,15 @@ export async function PUT(
     }
 
     if (body.name !== undefined) restaurant.name = body.name.trim();
-    if (body.slug !== undefined) {
+    if (body.slug !== undefined && body.slug.trim()) {
       const cleanSlug = body.slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-      const existing = await Restaurant.findOne({ slug: cleanSlug, _id: { $ne: restaurant._id } });
-      if (existing) {
-        return NextResponse.json({ error: "Slug is already used by another restaurant" }, { status: 409 });
+      let targetSlug = cleanSlug;
+      let counter = 1;
+      while (await Restaurant.findOne({ slug: targetSlug, _id: { $ne: restaurant._id } })) {
+        targetSlug = `${cleanSlug}-${counter}`;
+        counter++;
       }
-      restaurant.slug = cleanSlug;
+      restaurant.slug = targetSlug;
     }
     if (body.description !== undefined) restaurant.description = body.description;
     if (body.detail !== undefined) restaurant.detail = body.detail;
