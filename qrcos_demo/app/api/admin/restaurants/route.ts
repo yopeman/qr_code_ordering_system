@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Restaurant } from "@/lib/models/Restaurant";
+import "@/lib/models/Admin";
 import { verifyAdminToken, ADMIN_COOKIE_NAME } from "@/lib/auth";
 
 function checkAdmin(request: NextRequest) {
@@ -19,7 +20,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const restaurants = await Restaurant.find().sort({ createdAt: -1 }).select("-password");
+    const restaurants = await Restaurant.find()
+      .sort({ createdAt: -1 })
+      .select("-password")
+      .populate({ path: "createdBy", select: "email", strictPopulate: false });
     return NextResponse.json({ ok: true, restaurants });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -58,7 +62,10 @@ export async function POST(request: NextRequest) {
       status: status || "active",
       telegramChat: telegramChat || "",
       config: Array.isArray(config) ? config : [],
+      createdBy: admin.adminId,
     });
+
+    await restaurant.populate({ path: "createdBy", select: "email", strictPopulate: false });
 
     return NextResponse.json({ ok: true, restaurant }, { status: 201 });
   } catch (err: any) {

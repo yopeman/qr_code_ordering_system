@@ -38,6 +38,7 @@ interface RestaurantItem {
   status: "active" | "inactive" | "suspended";
   telegramChat: string;
   config: { feeName: string; type: "percent" | "fixed"; amount: number }[];
+  createdBy?: { _id: string; email: string } | string | null;
   createdAt: string;
 }
 
@@ -795,6 +796,14 @@ export default function AdminPage() {
                       {rest.config?.length || 0} applied
                     </span>
                   </div>
+                  {rest.createdBy && (
+                    <div className="flex items-center justify-between">
+                      <span>Created By:</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {typeof rest.createdBy === "object" ? rest.createdBy.email : rest.createdBy}
+                      </span>
+                    </div>
+                  )}
                   {rest.expiredAt && (
                     <div className="flex items-center justify-between">
                       <span>Expires:</span>
@@ -883,6 +892,7 @@ export default function AdminPage() {
                   <th className="py-3.5 px-4">Restaurant</th>
                   <th className="py-3.5 px-4">Slug</th>
                   <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Created By</th>
                   <th className="py-3.5 px-4">Telegram Chat</th>
                   <th className="py-3.5 px-4">Expires</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
@@ -915,6 +925,11 @@ export default function AdminPage() {
                       >
                         {rest.status}
                       </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-400 text-xs">
+                      {typeof rest.createdBy === "object" && rest.createdBy
+                        ? rest.createdBy.email
+                        : rest.createdBy || "—"}
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-500">
                       {rest.telegramChat || "Default"}
@@ -1064,6 +1079,15 @@ export default function AdminPage() {
           {restError && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs">
               {restError}
+            </div>
+          )}
+
+          {editingRest?.createdBy && (
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between">
+              <span>Created by admin:</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                {typeof editingRest.createdBy === "object" ? editingRest.createdBy.email : editingRest.createdBy}
+              </span>
             </div>
           )}
 

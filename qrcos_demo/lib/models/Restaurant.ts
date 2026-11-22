@@ -1,4 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import type { IAdmin } from "./Admin";
+import "./Admin";
 
 export interface IRestaurantDetail {
   key: string;
@@ -22,6 +24,7 @@ export interface IRestaurant extends Document {
   status: "active" | "inactive" | "suspended";
   telegramChat: string;
   config: IRestaurantConfig[];
+  createdBy?: mongoose.Types.ObjectId | IAdmin | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -67,11 +70,24 @@ const RestaurantSchema = new Schema<IRestaurant>(
     },
     telegramChat: { type: String, default: "" },
     config: { type: [RestaurantConfigSchema], default: [] },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// Ensure strictPopulate is disabled if schemas hot-reload or legacy models are queried
+(RestaurantSchema as any).set("strictPopulate", false);
+
+if (mongoose.models.Restaurant && !mongoose.models.Restaurant.schema.path("createdBy")) {
+  delete mongoose.models.Restaurant;
+}
 
 export const Restaurant: Model<IRestaurant> =
   mongoose.models.Restaurant || mongoose.model<IRestaurant>("Restaurant", RestaurantSchema);

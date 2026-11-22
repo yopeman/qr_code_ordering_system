@@ -17,13 +17,14 @@ async function seed() {
   console.log("Cleared existing data.");
 
   // 1. Create Demo Admin (password null as per spec to trigger initial password setup)
-  await db.collection("admins").insertOne({
+  const adminResult = await db.collection("admins").insertOne({
     email: "admin@qrcos.com",
     password: null, // Null to demonstrate password setup modal on first login
     status: "active",
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+  const adminId = adminResult.insertedId;
   console.log("Seeded Admin: admin@qrcos.com (password: null - onboarding mode)");
 
   // 2. Create Flagship Ethiopian Restaurants
@@ -48,6 +49,7 @@ async function seed() {
       { feeName: "VAT", type: "percent", amount: 15 },
       { feeName: "Service Charge", type: "fixed", amount: 50 },
     ],
+    createdBy: adminId,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -73,6 +75,7 @@ async function seed() {
       { feeName: "VAT", type: "percent", amount: 15 },
       { feeName: "Service Charge", type: "fixed", amount: 25 },
     ],
+    createdBy: adminId,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -98,6 +101,7 @@ async function seed() {
       { feeName: "VAT", type: "percent", amount: 15 },
       { feeName: "Service Charge", type: "fixed", amount: 50 },
     ],
+    createdBy: adminId,
     createdAt: new Date(),
     updatedAt: new Date(),
   });

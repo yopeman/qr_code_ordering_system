@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import { Restaurant } from "@/lib/models/Restaurant";
 import { Menu } from "@/lib/models/Menu";
 import { Order } from "@/lib/models/Order";
+import "@/lib/models/Admin";
 import { verifyAdminToken, ADMIN_COOKIE_NAME } from "@/lib/auth";
 
 function checkAdmin(request: NextRequest) {
@@ -25,7 +26,9 @@ export async function GET(
     }
 
     const { id } = await params;
-    const restaurant = await Restaurant.findById(id).select("-password");
+    const restaurant = await Restaurant.findById(id)
+      .select("-password")
+      .populate({ path: "createdBy", select: "email", strictPopulate: false });
     if (!restaurant) {
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
