@@ -1317,6 +1317,20 @@ export default function RestaurantOwnerPage({
             </div>
           )}
 
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Dish Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={menuFormData.name}
+              onChange={(e) => setMenuFormData({ ...menuFormData, name: e.target.value })}
+              placeholder="e.g. Special Tibs / ስፔሻል ጥብስ"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -1436,20 +1450,6 @@ export default function RestaurantOwnerPage({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Dish Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={menuFormData.name}
-              onChange={(e) => setMenuFormData({ ...menuFormData, name: e.target.value })}
-              placeholder="e.g. Special Tibs / ስፔሻል ጥብስ"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
           </div>
 
           <div>
