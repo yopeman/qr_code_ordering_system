@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { formatOrderDateTime } from "@/lib/utils";
 import {
   History,
   Clock,
@@ -182,7 +183,7 @@ export default function MyHistoryPage() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Ordered on {new Date(ref.orderedAt).toLocaleString()}
+                      Ordered on {formatOrderDateTime(ref.orderedAt, { includeZone: true })}
                     </p>
                   </div>
 

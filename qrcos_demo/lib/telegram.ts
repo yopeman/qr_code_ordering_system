@@ -1,4 +1,5 @@
 import { IOrder, OrderStatus } from "./models/Order";
+import { formatOrderTime } from "./utils";
 
 export const ORDER_STATUSES: OrderStatus[] = ["pending", "preparing", "completed"];
 
@@ -20,10 +21,9 @@ export function buildInlineKeyboard(orderId: string, currentStatus: OrderStatus)
 }
 
 export function buildOrderReceipt(order: IOrder, restaurantName: string): string {
-  const dateStr = new Date(order.orderedAt || Date.now()).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  const dateStr = formatOrderTime(order.orderedAt || Date.now(), {
+    includeSeconds: true,
+    includeZone: true,
   });
 
   const lines = (order.details || []).map((item) => {

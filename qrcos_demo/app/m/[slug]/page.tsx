@@ -275,7 +275,7 @@ export default function DinerMenuPage({
           restaurantName: restaurant?.name || slug,
           table,
           totalPrice: grandTotal,
-          orderedAt: new Date().toISOString(),
+          orderedAt: data.order?.orderedAt || new Date().toISOString(),
         },
         ...existingSaved,
       ];

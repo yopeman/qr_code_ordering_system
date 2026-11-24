@@ -6,7 +6,7 @@ import { QRCodeModal } from "@/components/QRCodeModal";
 import { LogoUpload } from "@/components/LogoUpload";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
-import { slugify } from "@/lib/utils";
+import { slugify, formatOrderTime, formatOrderDate } from "@/lib/utils";
 import {
   Shield,
   Plus,
@@ -800,7 +800,7 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                       <span>Expires:</span>
                       <span className={new Date(rest.expiredAt).getTime() < Date.now() ? "text-rose-600 font-semibold inline-flex items-center gap-1" : ""}>
-                        {new Date(rest.expiredAt).toLocaleDateString()}
+                        {formatOrderDate(rest.expiredAt)}
                         {new Date(rest.expiredAt).getTime() < Date.now() && (
                           <span className="text-[9px] bg-rose-500/10 text-rose-600 px-1 py-0.2 rounded font-bold uppercase">
                             Expired
@@ -936,7 +936,7 @@ export default function AdminPage() {
                     <td className="py-3 px-4">
                       {rest.expiredAt ? (
                         <span className={new Date(rest.expiredAt).getTime() < Date.now() ? "text-rose-600 font-semibold inline-flex items-center gap-1" : ""}>
-                          {new Date(rest.expiredAt).toLocaleDateString()}
+                          {formatOrderDate(rest.expiredAt)}
                           {new Date(rest.expiredAt).getTime() < Date.now() && (
                             <span className="text-[9px] bg-rose-500/10 text-rose-600 px-1.5 py-0.5 rounded font-bold uppercase">
                               Expired
@@ -1253,7 +1253,7 @@ export default function AdminPage() {
                       <span className="font-bold text-sm text-slate-900 dark:text-white">
                         Table {ord.table}
                       </span>
-                      <span className="text-xs text-slate-400">• {ord.customerName}</span>
+                      <span className="text-xs text-slate-400">• {ord.customerName} • {formatOrderTime(ord.orderedAt, { includeZone: true })}</span>
                     </div>
 
                     <span

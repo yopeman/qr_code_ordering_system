@@ -15,7 +15,7 @@ import {
   ExternalLink,
   Loader2,
 } from "lucide-react";
-import { checkRestaurantAccess } from "@/lib/utils";
+import { checkRestaurantAccess, formatOrderTime } from "@/lib/utils";
 
 interface OrderTicket {
   _id: string;
@@ -315,7 +315,7 @@ export default function KitchenOrderPage({
                         Table {ticket.table}
                       </span>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {ticket.customerName} • <span className="font-mono">{timeAgo}</span>
+                        {ticket.customerName} • {formatOrderTime(ticket.orderedAt, { includeZone: true })} • <span className="font-mono">{timeAgo}</span>
                       </p>
                     </div>
 

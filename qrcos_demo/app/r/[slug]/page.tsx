@@ -8,7 +8,7 @@ import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { DishImageGallery } from "@/components/DishImageGallery";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
-import { checkRestaurantAccess } from "@/lib/utils";
+import { checkRestaurantAccess, formatOrderTime, formatOrderDate } from "@/lib/utils";
 import {
   Store,
   UtensilsCrossed,
@@ -735,7 +735,7 @@ export default function RestaurantOwnerPage({
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
                   }`}
                 >
-                  {access.isExpired ? "Expired" : "Expires"}: {new Date(restaurant.expiredAt).toLocaleDateString()}
+                  {access.isExpired ? "Expired" : "Expires"}: {formatOrderDate(restaurant.expiredAt)}
                 </span>
               )}
             </div>
@@ -1081,7 +1081,7 @@ export default function RestaurantOwnerPage({
                         Table {ord.table}
                       </span>
                       <p className="text-xs text-slate-400">
-                        {ord.customerName} • {new Date(ord.orderedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {ord.customerName} • {formatOrderTime(ord.orderedAt, { includeZone: true })}
                       </p>
                     </div>
 
@@ -1203,7 +1203,7 @@ export default function RestaurantOwnerPage({
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Subscription Expiry</span>
               <span className="text-xs font-mono font-medium text-slate-800 dark:text-slate-200">
-                {restaurant?.expiredAt ? new Date(restaurant.expiredAt).toLocaleDateString() : "No Expiry (Lifetime)"}
+                {restaurant?.expiredAt ? formatOrderDate(restaurant.expiredAt) : "No Expiry (Lifetime)"}
                 {access.isExpired && " (Expired)"}
               </span>
             </div>

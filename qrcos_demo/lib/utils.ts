@@ -1,4 +1,85 @@
 /**
+ * Default application timezone is East Africa Time (EAT - UTC+3)
+ * Standard IANA identifier: Africa/Addis_Ababa
+ */
+export const APP_TIMEZONE =
+  process.env.NEXT_PUBLIC_TIMEZONE ||
+  process.env.TIMEZONE ||
+  "Africa/Addis_Ababa";
+
+/**
+ * Formats a time string or Date into East Africa local time (e.g. "03:38 PM" or "03:38:14 PM EAT")
+ */
+export function formatOrderTime(
+  date: Date | string | number | null | undefined,
+  options?: {
+    includeSeconds?: boolean;
+    includeZone?: boolean;
+    hour12?: boolean;
+  }
+): string {
+  if (!date) return "";
+  const d = typeof date === "object" && date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+
+  const timeStr = d.toLocaleTimeString("en-US", {
+    timeZone: APP_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: options?.includeSeconds ? "2-digit" : undefined,
+    hour12: options?.hour12 !== false,
+  });
+
+  return options?.includeZone ? `${timeStr} EAT` : timeStr;
+}
+
+/**
+ * Formats a date & time into East Africa local datetime (e.g. "Nov 24, 2026, 03:38 PM EAT")
+ */
+export function formatOrderDateTime(
+  date: Date | string | number | null | undefined,
+  options?: {
+    includeSeconds?: boolean;
+    includeZone?: boolean;
+  }
+): string {
+  if (!date) return "";
+  const d = typeof date === "object" && date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+
+  const dtStr = d.toLocaleString("en-US", {
+    timeZone: APP_TIMEZONE,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: options?.includeSeconds ? "2-digit" : undefined,
+    hour12: true,
+  });
+
+  return options?.includeZone ? `${dtStr} EAT` : dtStr;
+}
+
+/**
+ * Formats a date into East Africa local date (e.g. "Nov 24, 2026")
+ */
+export function formatOrderDate(
+  date: Date | string | number | null | undefined
+): string {
+  if (!date) return "";
+  const d = typeof date === "object" && date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+
+  return d.toLocaleDateString("en-US", {
+    timeZone: APP_TIMEZONE,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/**
  * Converts a restaurant name into a clean, URL-safe slug
  * Example: "Habesha Restaurant & Grill!" -> "habesha-restaurant-grill"
  */
@@ -61,7 +142,7 @@ export function checkRestaurantAccess(
   }
 
   if (isExpired) {
-    const dateStr = expiredAt ? new Date(expiredAt).toLocaleDateString() : "";
+    const dateStr = expiredAt ? formatOrderDate(expiredAt) : "";
     return {
       isOperational: false,
       isExpired: true,
