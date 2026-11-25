@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Utensils, Image as ImageIcon } from "lucide-react";
+import { useI18n } from "./I18nProvider";
 
 interface DishImageGalleryProps {
   images: string[];
@@ -14,6 +15,7 @@ export function DishImageGallery({
   dishName,
   className = "",
 }: DishImageGalleryProps) {
+  const { t } = useI18n();
   const [activeIndex, setActiveIndex] = useState(0);
 
   // Reset active index when images list changes
@@ -25,7 +27,7 @@ export function DishImageGallery({
     return (
       <div className={`h-56 w-full rounded-2xl bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center text-slate-400 ${className}`}>
         <Utensils className="w-8 h-8 mb-2 opacity-50" />
-        <span className="text-xs">No photos available</span>
+        <span className="text-xs">{t("gallery.noPhotos")}</span>
       </div>
     );
   }
@@ -48,9 +50,8 @@ export function DishImageGallery({
         <img
           key={images[activeIndex]}
           src={images[activeIndex]}
-          alt={`${dishName} - photo ${activeIndex + 1}`}
+          alt={`${dishName} - ${activeIndex + 1}`}
           className="w-full h-full object-cover transition-opacity duration-200"
-          // Following optimize-image-priority: high priority for candidate, no lazy loading on active view
           fetchPriority="high"
         />
 
@@ -60,7 +61,7 @@ export function DishImageGallery({
             <button
               type="button"
               onClick={prevImage}
-              aria-label="Previous image"
+              aria-label={t("gallery.prev")}
               className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white transition shadow-lg opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -68,7 +69,7 @@ export function DishImageGallery({
             <button
               type="button"
               onClick={nextImage}
-              aria-label="Next image"
+              aria-label={t("gallery.next")}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white transition shadow-lg opacity-90 hover:opacity-100 hover:scale-105 active:scale-95"
             >
               <ChevronRight className="w-5 h-5" />
@@ -89,7 +90,7 @@ export function DishImageGallery({
                   key={i}
                   type="button"
                   onClick={() => setActiveIndex(i)}
-                  aria-label={`Go to image ${i + 1}`}
+                  aria-label={t("gallery.goTo", { index: i + 1 })}
                   className={`h-1.5 rounded-full transition-all ${
                     i === activeIndex
                       ? "w-5 bg-white"
@@ -119,7 +120,7 @@ export function DishImageGallery({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img}
-                alt={`${dishName} thumbnail ${i + 1}`}
+                alt={`${dishName} ${i + 1}`}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 fetchPriority="low"

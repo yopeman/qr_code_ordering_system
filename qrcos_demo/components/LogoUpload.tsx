@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Upload, X, Loader2, Image as ImageIcon, Link as LinkIcon, Check } from "lucide-react";
+import { Upload, X, Loader2, Link as LinkIcon, Check } from "lucide-react";
+import { useI18n } from "./I18nProvider";
 
 interface LogoUploadProps {
   value: string;
@@ -14,8 +15,10 @@ export function LogoUpload({
   value,
   onChange,
   folder = "qrcos/logos",
-  label = "Restaurant Logo",
+  label,
 }: LogoUploadProps) {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t("logo.defaultLabel");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -25,13 +28,13 @@ export function LogoUpload({
   const handleFile = async (file: File) => {
     setError(null);
     if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file (PNG, JPG, WEBP, SVG)");
+      setError(t("logo.invalidType"));
       return;
     }
 
     // Client-side check against 5MB
     if (file.size > 5 * 1024 * 1024) {
-      setError("File exceeds 5MB limit. Please choose a smaller image.");
+      setError(t("logo.maxSize"));
       return;
     }
 
@@ -48,12 +51,12 @@ export function LogoUpload({
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Failed to upload image to Cloudinary");
+        throw new Error(data.error || t("logo.uploadFailed"));
       }
 
       onChange(data.url);
     } catch (err: any) {
-      setError(err.message || "Upload failed");
+      setError(err.message || t("logo.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -80,7 +83,7 @@ export function LogoUpload({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-          {label}
+          {resolvedLabel}
         </label>
         <button
           type="button"
@@ -88,7 +91,7 @@ export function LogoUpload({
           className="text-[11px] text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1"
         >
           <LinkIcon className="w-3 h-3" />
-          {showUrlInput ? "Use File Upload" : "Paste Image URL"}
+          {showUrlInput ? t("logo.useFile") : t("logo.pasteUrl")}
         </button>
       </div>
 
@@ -106,7 +109,7 @@ export function LogoUpload({
               type="button"
               onClick={() => onChange("")}
               className="p-2 text-slate-400 hover:text-slate-600"
-              title="Clear"
+              title={t("logo.clear")}
             >
               <X className="w-4 h-4" />
             </button>
@@ -120,8 +123,8 @@ export function LogoUpload({
           </div>
 
           <div className="flex-1 min-w-0">
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-              <Check className="w-3.5 h-3.5" /> Logo Uploaded to Cloudinary
+            <span className="text-xs font-semibold flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <Check className="w-3.5 h-3.5" /> {t("logo.uploaded")}
             </span>
             <p className="text-[11px] text-slate-400 truncate mt-0.5 font-mono">{value}</p>
           </div>
@@ -132,13 +135,13 @@ export function LogoUpload({
               onClick={() => fileInputRef.current?.click()}
               className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition"
             >
-              Replace
+              {t("logo.replace")}
             </button>
             <button
               type="button"
               onClick={() => onChange("")}
               className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
-              title="Remove Logo"
+              title={t("logo.remove")}
             >
               <X className="w-4 h-4" />
             </button>
@@ -172,7 +175,7 @@ export function LogoUpload({
             <div className="flex flex-col items-center justify-center py-2 space-y-2">
               <Loader2 className="w-6 h-6 animate-spin text-orange-600" />
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Uploading to Cloudinary...
+                {t("logo.uploading")}
               </span>
             </div>
           ) : (
@@ -182,10 +185,10 @@ export function LogoUpload({
               </div>
               <div>
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                  Click to upload or drag & drop logo
+                  {t("logo.clickOrDrop")}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  PNG, JPG, WEBP or SVG (Max 5MB)
+                  {t("logo.formats")}
                 </p>
               </div>
             </div>

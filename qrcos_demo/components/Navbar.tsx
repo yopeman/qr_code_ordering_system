@@ -2,23 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  QrCode,
-  UtensilsCrossed,
-  History,
-  Sun,
-  Moon,
-  Menu as MenuIcon,
-  X,
-  Store,
-  ChevronRight,
-} from "lucide-react";
+import { QrCode, Sun, Moon } from "lucide-react";
+import { useI18n } from "./I18nProvider";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Navbar() {
-  const pathname = usePathname();
+  const { t } = useI18n();
   const [isDark, setIsDark] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const isDarkMode =
@@ -59,22 +49,23 @@ export function Navbar() {
                 QRCOS
               </span>
               <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400">
-                Dining
+                {t("nav.dining")}
               </span>
             </div>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-none">
-              Smart QR Hospitality
+              {t("nav.subtitle")}
             </p>
           </div>
         </Link>
 
-        {/* Actions & Portal CTAs */}
+        {/* Actions & Language/Theme Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher />
           <button
             type="button"
             onClick={toggleTheme}
             className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400 transition"
-            aria-label="Toggle dark/light mode"
+            aria-label={t("nav.toggleTheme")}
           >
             {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
           </button>

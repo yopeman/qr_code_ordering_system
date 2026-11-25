@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Modal } from "./Modal";
 import { renderQRCodeCard, downloadQRCodeImage, getTableOrderUrl } from "@/lib/qr";
 import { Download, Copy, Check, ExternalLink, QrCode } from "lucide-react";
+import { useI18n } from "./I18nProvider";
 
 interface QRCodeModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export function QRCodeModal({
   logoUrl,
   defaultTable = "1",
 }: QRCodeModalProps) {
+  const { t } = useI18n();
   const [table, setTable] = useState(defaultTable);
   const [generating, setGenerating] = useState(false);
   const [dataUrl, setDataUrl] = useState<string>("");
@@ -81,27 +83,27 @@ export function QRCodeModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Generate Table QR Code — ${restaurantName}`}
+      title={t("qr.title", { name: restaurantName })}
       maxWidth="max-w-2xl"
     >
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
           <div className="flex-1 w-full">
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Table Number or Label
+              {t("qr.tableLabel")}
             </label>
             <input
               type="text"
               value={table}
               onChange={(e) => setTable(e.target.value)}
-              placeholder="e.g. 12, Patio-3, Bar-1"
+              placeholder={t("qr.tablePlaceholder")}
               className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
           <div className="flex-1 w-full">
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-              Destination URL
+              {t("qr.destUrl")}
             </label>
             <div className="flex items-center gap-1.5">
               <input
@@ -114,7 +116,7 @@ export function QRCodeModal({
                 type="button"
                 onClick={handleCopyLink}
                 className="p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Copy Link"
+                title={t("qr.copyLink")}
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
               </button>
@@ -123,7 +125,7 @@ export function QRCodeModal({
                 target="_blank"
                 rel="noreferrer"
                 className="p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Open in new tab"
+                title={t("qr.openNewTab")}
               >
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -139,14 +141,14 @@ export function QRCodeModal({
           />
           {generating && (
             <p className="text-xs text-orange-400 mt-2 flex items-center gap-1.5">
-              <QrCode className="w-3.5 h-3.5 animate-spin" /> Rendering high-resolution card...
+              <QrCode className="w-3.5 h-3.5 animate-spin" /> {t("qr.rendering")}
             </p>
           )}
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-            Export format: <span className="font-mono text-slate-700 dark:text-slate-300">{restaurantSlug}_table_{table || "1"}_QR_code.png</span>
+            {t("qr.exportFormat")} <span className="font-mono text-slate-700 dark:text-slate-300">{restaurantSlug}_table_{table || "1"}_QR_code.png</span>
           </p>
 
           <button
@@ -156,7 +158,7 @@ export function QRCodeModal({
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white font-semibold text-xs sm:text-sm shadow-lg shadow-orange-500/25 transition-all disabled:opacity-50 touch-manipulation"
           >
             <Download className="w-4 h-4" />
-            Download Stand Card (PNG)
+            {t("qr.download")}
           </button>
         </div>
       </div>

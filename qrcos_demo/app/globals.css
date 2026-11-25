@@ -41,7 +41,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans Ethiopic", "Abyssinica SIL", "Nyala", sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   min-height: 100dvh;

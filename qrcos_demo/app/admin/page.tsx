@@ -7,6 +7,7 @@ import { LogoUpload } from "@/components/LogoUpload";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
 import { TelegramChatInput } from "@/components/TelegramChatInput";
+import { useI18n } from "@/components/I18nProvider";
 import { slugify, formatOrderTime, formatOrderDate } from "@/lib/utils";
 import {
   Shield,
@@ -20,8 +21,6 @@ import {
   Trash2,
   RotateCcw,
   LogOut,
-  Clock,
-  Send,
   AlertCircle,
   CheckCircle2,
   Loader2,
@@ -44,6 +43,8 @@ interface RestaurantItem {
 }
 
 export default function AdminPage() {
+  const { t } = useI18n();
+
   // Auth state
   const [authChecking, setAuthChecking] = useState(true);
   const [adminUser, setAdminUser] = useState<any>(null);
@@ -97,7 +98,6 @@ export default function AdminPage() {
   const [restOrders, setRestOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
-  // Initial Auth Check
   useEffect(() => {
     checkAdminSession();
   }, []);
@@ -135,7 +135,6 @@ export default function AdminPage() {
     }
   };
 
-  // Auth: Email Step Check
   const handleCheckEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
@@ -170,17 +169,16 @@ export default function AdminPage() {
     }
   };
 
-  // Auth: Setup password (for password === null)
   const handleSetupPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
 
     if (!newPassword || newPassword.length < 4) {
-      setLoginError("Password must be at least 4 characters");
+      setLoginError(t("owner.pwdMinError"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setLoginError("Passwords do not match");
+      setLoginError(t("owner.pwdMismatch"));
       return;
     }
 
@@ -212,13 +210,12 @@ export default function AdminPage() {
     }
   };
 
-  // Auth: Standard Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
 
     if (!loginPassword) {
-      setLoginError("Please enter your password");
+      setLoginError(t("owner.pwdRequired"));
       return;
     }
 
@@ -271,11 +268,11 @@ export default function AdminPage() {
     setPwdMsg({ text: "", isError: false });
 
     if (!changeNewPwd || changeNewPwd.length < 4) {
-      setPwdMsg({ text: "New password must be at least 4 characters", isError: true });
+      setPwdMsg({ text: t("owner.pwdMinError"), isError: true });
       return;
     }
     if (changeNewPwd !== changeConfirmPwd) {
-      setPwdMsg({ text: "Passwords do not match", isError: true });
+      setPwdMsg({ text: t("owner.pwdMismatch"), isError: true });
       return;
     }
 
@@ -297,7 +294,7 @@ export default function AdminPage() {
         return;
       }
 
-      setPwdMsg({ text: "Password updated successfully!", isError: false });
+      setPwdMsg({ text: t("owner.pwdUpdated"), isError: false });
       setTimeout(() => {
         setChangePwdOpen(false);
         setCurrentPwd("");
@@ -312,9 +309,8 @@ export default function AdminPage() {
     }
   };
 
-  // Reset restaurant password to null (for owner onboarding)
   const handleResetRestaurantPassword = async (rest: RestaurantItem) => {
-    if (!confirm(`Reset password for "${rest.name}" to null? The owner will be prompted to set a new password on their next visit.`)) {
+    if (!confirm(t("admin.confirmResetPwd", { name: rest.name }))) {
       return;
     }
 
@@ -336,9 +332,8 @@ export default function AdminPage() {
     }
   };
 
-  // Delete restaurant
   const handleDeleteRestaurant = async (rest: RestaurantItem) => {
-    if (!confirm(`Are you sure you want to delete "${rest.name}"? This will permanently delete all its menus and orders.`)) {
+    if (!confirm(t("admin.confirmDeleteRest", { name: rest.name }))) {
       return;
     }
 
@@ -357,114 +352,113 @@ export default function AdminPage() {
     }
   };
 
-    const handleNameChange = (name: string) => {
-      setFormData((prev) => ({
-        ...prev,
-        name,
-        slug: editingRest ? prev.slug : slugify(name),
-      }));
-    };
+  const handleNameChange = (name: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      name,
+      slug: editingRest ? prev.slug : slugify(name),
+    }));
+  };
 
-    // Save restaurant (create or edit)
-    const handleSaveRestaurant = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setRestError("");
+  const handleSaveRestaurant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRestError("");
 
-      if (!formData.name.trim()) {
-        setRestError("Restaurant name is required");
+    if (!formData.name.trim()) {
+      setRestError("Restaurant name is required");
+      return;
+    }
+
+    const parsedConfig = (formData.fees || []).map((f) => ({
+      feeName: f.feeName.trim(),
+      type: f.type,
+      amount: parseFloat(String(f.amount)) || 0,
+    }));
+
+    const parsedDetail = (formData.detail || [])
+      .filter((d) => d.key.trim() && d.value.trim())
+      .map((d) => ({ key: d.key.trim(), value: d.value.trim() }));
+
+    setSavingRest(true);
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        slug: formData.slug.trim(),
+        description: formData.description,
+        detail: parsedDetail,
+        logoUrl: formData.logoUrl,
+        expiredAt: formData.expiredAt ? new Date(formData.expiredAt).toISOString() : null,
+        status: formData.status,
+        telegramChat: formData.telegramChat?.trim() || "",
+        config: parsedConfig,
+      };
+
+      const url = editingRest
+        ? `/api/admin/restaurants/${editingRest._id}`
+        : "/api/admin/restaurants";
+      const method = editingRest ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setRestError(data.error || "Failed to save restaurant");
         return;
       }
 
-      const parsedConfig = (formData.fees || []).map((f) => ({
-        feeName: f.feeName.trim(),
-        type: f.type,
-        amount: parseFloat(String(f.amount)) || 0,
-      }));
+      setRestModalOpen(false);
+      loadRestaurants();
+    } catch (err: any) {
+      setRestError(err.message || "Failed to save");
+    } finally {
+      setSavingRest(false);
+    }
+  };
 
-      const parsedDetail = (formData.detail || [])
-        .filter((d) => d.key.trim() && d.value.trim())
-        .map((d) => ({ key: d.key.trim(), value: d.value.trim() }));
+  const openCreateModal = () => {
+    setEditingRest(null);
+    setFormData({
+      name: "",
+      slug: "",
+      description: "",
+      logoUrl: "",
+      expiredAt: "",
+      status: "active",
+      telegramChat: "",
+      detail: [],
+      fees: [],
+    });
+    setRestError("");
+    setRestModalOpen(true);
+  };
 
-      setSavingRest(true);
-      try {
-        const payload = {
-          name: formData.name.trim(),
-          slug: formData.slug.trim(),
-          description: formData.description,
-          detail: parsedDetail,
-          logoUrl: formData.logoUrl,
-          expiredAt: formData.expiredAt ? new Date(formData.expiredAt).toISOString() : null,
-          status: formData.status,
-          telegramChat: formData.telegramChat?.trim() || "",
-          config: parsedConfig,
-        };
-
-        const url = editingRest
-          ? `/api/admin/restaurants/${editingRest._id}`
-          : "/api/admin/restaurants";
-        const method = editingRest ? "PUT" : "POST";
-
-        const res = await fetch(url, {
-          method,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          setRestError(data.error || "Failed to save restaurant");
-          return;
-        }
-
-        setRestModalOpen(false);
-        loadRestaurants();
-      } catch (err: any) {
-        setRestError(err.message || "Failed to save");
-      } finally {
-        setSavingRest(false);
-      }
-    };
-
-    const openCreateModal = () => {
-      setEditingRest(null);
-      setFormData({
-        name: "",
-        slug: "",
-        description: "",
-        logoUrl: "",
-        expiredAt: "",
-        status: "active",
-        telegramChat: "", // No default telegram channel!
-        detail: [],
-        fees: [],
-      });
-      setRestError("");
-      setRestModalOpen(true);
-    };
-
-    const openEditModal = (rest: RestaurantItem) => {
-      setEditingRest(rest);
-      setFormData({
-        name: rest.name,
-        slug: rest.slug,
-        description: rest.description || "",
-        logoUrl: rest.logoUrl || "",
-        expiredAt: rest.expiredAt ? rest.expiredAt.substring(0, 10) : "",
-        status: rest.status,
-        telegramChat: rest.telegramChat || "",
-        detail: (rest.detail || []).map((d) => ({
-          key: d.key,
-          value: d.value,
-        })),
-        fees: (rest.config || []).map((c) => ({
-          feeName: c.feeName,
-          type: c.type,
-          amount: c.amount,
-        })),
-      });
-      setRestError("");
-      setRestModalOpen(true);
-    };
+  const openEditModal = (rest: RestaurantItem) => {
+    setEditingRest(rest);
+    setFormData({
+      name: rest.name,
+      slug: rest.slug,
+      description: rest.description || "",
+      logoUrl: rest.logoUrl || "",
+      expiredAt: rest.expiredAt ? rest.expiredAt.substring(0, 10) : "",
+      status: rest.status,
+      telegramChat: rest.telegramChat || "",
+      detail: (rest.detail || []).map((d) => ({
+        key: d.key,
+        value: d.value,
+      })),
+      fees: (rest.config || []).map((c) => ({
+        feeName: c.feeName,
+        type: c.type,
+        amount: c.amount,
+      })),
+    });
+    setRestError("");
+    setRestModalOpen(true);
+  };
 
   const openOrdersModal = async (rest: RestaurantItem) => {
     setSelectedRestForOrders(rest);
@@ -501,10 +495,10 @@ export default function AdminPage() {
           </div>
 
           <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white">
-            Admin Authentication
+            {t("admin.authTitle")}
           </h2>
           <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-1 mb-6">
-            Enter your admin email to verify credentials or complete initial onboarding setup.
+            {t("admin.authDesc")}
           </p>
 
           {loginError && (
@@ -519,14 +513,14 @@ export default function AdminPage() {
             <form onSubmit={handleCheckEmail} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Admin Email
+                  {t("admin.emailLabel")}
                 </label>
                 <input
                   type="email"
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="admin@qrcos.com"
+                  placeholder={t("admin.emailPlaceholder")}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -537,7 +531,7 @@ export default function AdminPage() {
                 className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loginLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Continue
+                {t("common.continue")}
               </button>
             </form>
           )}
@@ -548,14 +542,14 @@ export default function AdminPage() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    Password for {loginEmail}
+                    {t("admin.pwdForEmail", { email: loginEmail })}
                   </label>
                   <button
                     type="button"
                     onClick={() => setLoginStep("email")}
                     className="text-xs text-orange-600 hover:underline"
                   >
-                    Change Email
+                    {t("admin.changeEmail")}
                   </button>
                 </div>
                 <input
@@ -563,7 +557,7 @@ export default function AdminPage() {
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="Enter your admin password"
+                  placeholder={t("admin.enterAdminPwd")}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -574,7 +568,7 @@ export default function AdminPage() {
                 className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loginLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Sign In
+                {t("common.signIn")}
               </button>
             </form>
           )}
@@ -583,33 +577,33 @@ export default function AdminPage() {
           {loginStep === "setup" && (
             <form onSubmit={handleSetupPassword} className="space-y-4">
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
-                Welcome! Your account is currently unpassworded. Please establish a secure password to complete onboarding.
+                {t("admin.setupWelcome")}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Create New Password
+                  {t("admin.createNewPwd")}
                 </label>
                 <input
                   type="password"
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Minimum 4 characters"
+                  placeholder={t("owner.minChars")}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Confirm Password
+                  {t("owner.confirmPwd")}
                 </label>
                 <input
                   type="password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter password"
+                  placeholder={t("admin.reenterPwd")}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -620,7 +614,7 @@ export default function AdminPage() {
                 className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loginLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save Password & Continue
+                {t("admin.savePwdContinue")}
               </button>
             </form>
           )}
@@ -639,10 +633,10 @@ export default function AdminPage() {
           </div>
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              Platform Administration
+              {t("admin.title")}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Logged in as <span className="font-semibold text-slate-700 dark:text-slate-200">{adminUser.email}</span>
+              {t("admin.loggedInAs")} <span className="font-semibold text-slate-700 dark:text-slate-200">{adminUser.email}</span>
             </p>
           </div>
         </div>
@@ -654,7 +648,7 @@ export default function AdminPage() {
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
           >
             <KeyRound className="w-4 h-4" />
-            Change Password
+            {t("admin.changePwdBtn")}
           </button>
 
           <button
@@ -663,7 +657,7 @@ export default function AdminPage() {
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 transition"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            {t("common.signOut")}
           </button>
         </div>
       </div>
@@ -672,10 +666,12 @@ export default function AdminPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            Restaurants & Tenancy
+            {t("admin.tenancyTitle")}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {restaurants.length} {restaurants.length === 1 ? "restaurant" : "restaurants"} registered
+            {restaurants.length === 1
+              ? t("admin.oneRestaurant", { count: restaurants.length })
+              : t("admin.manyRestaurants", { count: restaurants.length })}
           </p>
         </div>
 
@@ -689,7 +685,7 @@ export default function AdminPage() {
                   ? "bg-white dark:bg-slate-900 text-orange-600 shadow-sm"
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
-              title="Card Grid View"
+              title={t("admin.gridView")}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -701,7 +697,7 @@ export default function AdminPage() {
                   ? "bg-white dark:bg-slate-900 text-orange-600 shadow-sm"
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
-              title="Table View"
+              title={t("admin.tableView")}
             >
               <TableIcon className="w-4 h-4" />
             </button>
@@ -713,7 +709,7 @@ export default function AdminPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white font-semibold text-xs shadow-md transition"
           >
             <Plus className="w-4 h-4" />
-            Add Restaurant
+            {t("admin.addRestaurant")}
           </button>
         </div>
       </div>
@@ -725,7 +721,7 @@ export default function AdminPage() {
         </div>
       ) : restaurants.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8">
-          <p className="text-slate-500 text-sm">No restaurants found. Click &quot;Add Restaurant&quot; to create one.</p>
+          <p className="text-slate-500 text-sm">{t("admin.noRestaurants")}</p>
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -768,30 +764,30 @@ export default function AdminPage() {
                         : "bg-slate-500/10 text-slate-600 dark:text-slate-400"
                     }`}
                   >
-                    {rest.status}
+                    {t(`status.${rest.status}`)}
                   </span>
                 </div>
 
                 <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-4">
-                  {rest.description || "No description provided."}
+                  {rest.description || t("owner.noDesc")}
                 </p>
 
                 <div className="space-y-1.5 text-[11px] text-slate-500 dark:text-slate-400 mb-6 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                   <div className="flex items-center justify-between">
-                    <span>Telegram Alert:</span>
+                    <span>{t("admin.tgAlert")}</span>
                     <span className="font-mono text-slate-700 dark:text-slate-300">
-                      {rest.telegramChat || "Default bot"}
+                      {rest.telegramChat || t("admin.defaultBot")}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Configured Fees:</span>
+                    <span>{t("admin.configuredFees")}</span>
                     <span className="font-medium text-slate-700 dark:text-slate-300">
-                      {rest.config?.length || 0} applied
+                      {t("admin.feesApplied", { count: rest.config?.length || 0 })}
                     </span>
                   </div>
                   {rest.createdBy && (
                     <div className="flex items-center justify-between">
-                      <span>Created By:</span>
+                      <span>{t("admin.createdBy")}</span>
                       <span className="font-medium text-slate-700 dark:text-slate-300">
                         {typeof rest.createdBy === "object" ? rest.createdBy.email : rest.createdBy}
                       </span>
@@ -799,12 +795,12 @@ export default function AdminPage() {
                   )}
                   {rest.expiredAt && (
                     <div className="flex items-center justify-between">
-                      <span>Expires:</span>
+                      <span>{t("common.expires")}:</span>
                       <span className={new Date(rest.expiredAt).getTime() < Date.now() ? "text-rose-600 font-semibold inline-flex items-center gap-1" : ""}>
                         {formatOrderDate(rest.expiredAt)}
                         {new Date(rest.expiredAt).getTime() < Date.now() && (
                           <span className="text-[9px] bg-rose-500/10 text-rose-600 px-1 py-0.2 rounded font-bold uppercase">
-                            Expired
+                            {t("common.expired")}
                           </span>
                         )}
                       </span>
@@ -822,10 +818,9 @@ export default function AdminPage() {
                     setQrModalOpen(true);
                   }}
                   className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 transition"
-                  title="Generate and download table QR stands"
                 >
                   <QrCode className="w-3.5 h-3.5" />
-                  QR Card
+                  {t("admin.qrCard")}
                 </button>
 
                 <button
@@ -834,7 +829,7 @@ export default function AdminPage() {
                   className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  Orders
+                  {t("admin.orders")}
                 </button>
 
                 <button
@@ -843,17 +838,17 @@ export default function AdminPage() {
                   className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
-                  Edit
+                  {t("common.edit")}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleResetRestaurantPassword(rest)}
                   className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 transition"
-                  title="Reset password to null so owner can onboard again"
+                  title={t("admin.resetPwdTitle")}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  Reset Pwd
+                  {t("admin.resetPwd")}
                 </button>
 
                 <div className="col-span-2 pt-1 flex items-center justify-between">
@@ -863,7 +858,7 @@ export default function AdminPage() {
                     rel="noreferrer"
                     className="text-[11px] text-orange-600 hover:underline flex items-center gap-1"
                   >
-                    Owner Portal <ExternalLink className="w-3 h-3" />
+                    {t("kitchen.ownerPortal")} <ExternalLink className="w-3 h-3" />
                   </a>
 
                   <button
@@ -871,7 +866,7 @@ export default function AdminPage() {
                     onClick={() => handleDeleteRestaurant(rest)}
                     className="text-[11px] text-rose-500 hover:text-rose-700 flex items-center gap-1"
                   >
-                    <Trash2 className="w-3 h-3" /> Delete
+                    <Trash2 className="w-3 h-3" /> {t("common.delete")}
                   </button>
                 </div>
               </div>
@@ -884,18 +879,18 @@ export default function AdminPage() {
             className="overflow-x-auto"
             tabIndex={0}
             role="region"
-            aria-label="Registered Restaurants Directory"
+            aria-label={t("admin.tenancyTitle")}
           >
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 uppercase font-semibold">
                 <tr>
-                  <th className="py-3.5 px-4">Restaurant</th>
-                  <th className="py-3.5 px-4">Slug</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Created By</th>
-                  <th className="py-3.5 px-4">Telegram Chat</th>
-                  <th className="py-3.5 px-4">Expires</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4">{t("admin.thRestaurant")}</th>
+                  <th className="py-3.5 px-4">{t("admin.thSlug")}</th>
+                  <th className="py-3.5 px-4">{t("admin.thStatus")}</th>
+                  <th className="py-3.5 px-4">{t("admin.thCreatedBy")}</th>
+                  <th className="py-3.5 px-4">{t("admin.thTelegram")}</th>
+                  <th className="py-3.5 px-4">{t("admin.thExpires")}</th>
+                  <th className="py-3.5 px-4 text-right">{t("admin.thActions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
@@ -923,7 +918,7 @@ export default function AdminPage() {
                             : "bg-slate-500/10 text-slate-600"
                         }`}
                       >
-                        {rest.status}
+                        {t(`status.${rest.status}`)}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-slate-600 dark:text-slate-400 text-xs">
@@ -932,7 +927,7 @@ export default function AdminPage() {
                         : rest.createdBy || "—"}
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-500">
-                      {rest.telegramChat || "Default"}
+                      {rest.telegramChat || t("admin.defaultShort")}
                     </td>
                     <td className="py-3 px-4">
                       {rest.expiredAt ? (
@@ -940,12 +935,12 @@ export default function AdminPage() {
                           {formatOrderDate(rest.expiredAt)}
                           {new Date(rest.expiredAt).getTime() < Date.now() && (
                             <span className="text-[9px] bg-rose-500/10 text-rose-600 px-1.5 py-0.5 rounded font-bold uppercase">
-                              Expired
+                              {t("common.expired")}
                             </span>
                           )}
                         </span>
                       ) : (
-                        "Never"
+                        t("common.never")
                       )}
                     </td>
                     <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
@@ -956,7 +951,7 @@ export default function AdminPage() {
                           setQrModalOpen(true);
                         }}
                         className="p-2 sm:p-1.5 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 touch-manipulation inline-flex items-center justify-center"
-                        title="QR Stand"
+                        title={t("admin.qrCard")}
                       >
                         <QrCode className="w-3.5 h-3.5" />
                       </button>
@@ -964,7 +959,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => openOrdersModal(rest)}
                         className="p-2 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 touch-manipulation inline-flex items-center justify-center"
-                        title="View Orders"
+                        title={t("admin.orders")}
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
@@ -972,7 +967,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => openEditModal(rest)}
                         className="p-2 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 touch-manipulation inline-flex items-center justify-center"
-                        title="Edit Details"
+                        title={t("common.edit")}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -980,7 +975,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => handleResetRestaurantPassword(rest)}
                         className="p-2 sm:p-1.5 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 touch-manipulation inline-flex items-center justify-center"
-                        title="Reset Password to null"
+                        title={t("admin.resetPwdTitle")}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
@@ -988,7 +983,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => handleDeleteRestaurant(rest)}
                         className="p-2 sm:p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 touch-manipulation inline-flex items-center justify-center"
-                        title="Delete"
+                        title={t("common.delete")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1005,7 +1000,7 @@ export default function AdminPage() {
       <Modal
         isOpen={changePwdOpen}
         onClose={() => setChangePwdOpen(false)}
-        title="Change Admin Password"
+        title={t("admin.changeAdminPwdTitle")}
       >
         <form onSubmit={handleChangePassword} className="space-y-4">
           {pwdMsg.text && (
@@ -1023,7 +1018,7 @@ export default function AdminPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Current Password
+              {t("owner.currentPwd")}
             </label>
             <input
               type="password"
@@ -1036,7 +1031,7 @@ export default function AdminPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              New Password
+              {t("owner.newPwd")}
             </label>
             <input
               type="password"
@@ -1049,7 +1044,7 @@ export default function AdminPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Confirm New Password
+              {t("owner.confirmNewPwd")}
             </label>
             <input
               type="password"
@@ -1066,14 +1061,14 @@ export default function AdminPage() {
               onClick={() => setChangePwdOpen(false)}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={pwdLoading}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow transition disabled:opacity-50"
             >
-              {pwdLoading ? "Saving..." : "Update Password"}
+              {pwdLoading ? t("common.saving") : t("owner.updatePwdBtn")}
             </button>
           </div>
         </form>
@@ -1083,7 +1078,7 @@ export default function AdminPage() {
       <Modal
         isOpen={restModalOpen}
         onClose={() => setRestModalOpen(false)}
-        title={editingRest ? `Edit Restaurant: ${editingRest.name}` : "Create New Restaurant"}
+        title={editingRest ? t("admin.editRestTitle", { name: editingRest.name }) : t("admin.createRestTitle")}
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleSaveRestaurant} className="space-y-4">
@@ -1095,7 +1090,7 @@ export default function AdminPage() {
 
           {editingRest?.createdBy && (
             <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between">
-              <span>Created by admin:</span>
+              <span>{t("admin.createdByAdmin")}</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">
                 {typeof editingRest.createdBy === "object" ? editingRest.createdBy.email : editingRest.createdBy}
               </span>
@@ -1104,37 +1099,36 @@ export default function AdminPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Restaurant Name *
+              {t("admin.restNameLabel")}
             </label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="e.g. Habesha Traditional Restaurant"
+              placeholder={t("admin.restNamePlaceholder")}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Description
+              {t("admin.descLabel")}
             </label>
             <textarea
               rows={2}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Authentic Ethiopian dining, traditional tibs, and coffee ceremony"
+              placeholder={t("admin.descPlaceholder")}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
-          {/* Logo Upload with Cloudinary Integration */}
           <LogoUpload
             value={formData.logoUrl}
             onChange={(url) => setFormData((prev) => ({ ...prev, logoUrl: url }))}
             folder="qrcos/restaurants"
-            label="Restaurant Logo (Cloudinary Upload)"
+            label={t("owner.logoUploadLabel")}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1142,29 +1136,29 @@ export default function AdminPage() {
               value={formData.telegramChat}
               onChange={(val) => setFormData({ ...formData, telegramChat: val })}
               restaurantName={formData.name}
-              placeholder="e.g. @my_restaurant_orders"
-              helperText="No default channel. Leave blank if not using Telegram notifications."
+              placeholder={t("tg.placeholder")}
+              helperText={t("admin.tgAdminHelper")}
             />
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Account Status
+                {t("admin.accountStatusLabel")}
               </label>
               <select
                 value={formData.status}
                 onChange={(e: any) => setFormData({ ...formData, status: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
+                <option value="active">{t("status.active")}</option>
+                <option value="inactive">{t("status.inactive")}</option>
+                <option value="suspended">{t("status.suspended")}</option>
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Expiry Date
+              {t("admin.expiryDateLabel")}
             </label>
             <input
               type="date"
@@ -1174,13 +1168,12 @@ export default function AdminPage() {
             />
           </div>
 
-          {/* Interactive Contact & Amenities Key-Value Form */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <KeyValueBuilder
-              label="Contact & Amenities"
-              description="Store key-value information such as Phone, Location, Hours, Cuisine, etc."
-              keyPlaceholder="Key (e.g. Phone)"
-              valuePlaceholder="Value (e.g. +251 91 123 4567)"
+              label={t("owner.contactAmenities")}
+              description={t("admin.kvAdminDesc")}
+              keyPlaceholder={t("admin.kvAdminKeyPlaceholder")}
+              valuePlaceholder={t("admin.kvAdminValPlaceholder")}
               items={formData.detail}
               onChange={(detail) => setFormData((prev) => ({ ...prev, detail }))}
               presets={[
@@ -1193,7 +1186,6 @@ export default function AdminPage() {
             />
           </div>
 
-          {/* Interactive Fee Config Form */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <FeeConfigBuilder
               fees={formData.fees}
@@ -1207,14 +1199,14 @@ export default function AdminPage() {
               onClick={() => setRestModalOpen(false)}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={savingRest}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow transition disabled:opacity-50"
             >
-              {savingRest ? "Saving..." : editingRest ? "Update Restaurant" : "Create Restaurant"}
+              {savingRest ? t("common.saving") : editingRest ? t("admin.updateRest") : t("admin.createRest")}
             </button>
           </div>
         </form>
@@ -1224,7 +1216,7 @@ export default function AdminPage() {
       <Modal
         isOpen={ordersModalOpen}
         onClose={() => setOrdersModalOpen(false)}
-        title={`Live Orders — ${selectedRestForOrders?.name || ""}`}
+        title={t("admin.liveOrdersTitle", { name: selectedRestForOrders?.name || "" })}
         maxWidth="max-w-3xl"
       >
         <div className="space-y-4">
@@ -1233,7 +1225,7 @@ export default function AdminPage() {
               <Loader2 className="w-6 h-6 animate-spin text-orange-600" />
             </div>
           ) : restOrders.length === 0 ? (
-            <p className="text-center py-8 text-slate-500 text-sm">No orders recorded yet.</p>
+            <p className="text-center py-8 text-slate-500 text-sm">{t("owner.noOrdersYet")}</p>
           ) : (
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
               {restOrders.map((ord) => (
@@ -1244,7 +1236,7 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-slate-900 dark:text-white">
-                        Table {ord.table}
+                        {t("common.tableWithNumber", { table: ord.table })}
                       </span>
                       <span className="text-xs text-slate-400">• {ord.customerName} • {formatOrderTime(ord.orderedAt, { includeZone: true })}</span>
                     </div>
@@ -1258,7 +1250,7 @@ export default function AdminPage() {
                           : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
                       }`}
                     >
-                      {ord.status}
+                      {ord.status === "completed" ? t("status.completed") : ord.status === "preparing" ? t("status.preparing") : t("status.pending")}
                     </span>
                   </div>
 
@@ -1268,16 +1260,16 @@ export default function AdminPage() {
                         <span>
                           {item.name} <span className="text-slate-400">x{item.quantity}</span>
                         </span>
-                        <span className="font-mono">{Number(item.subtotalPrice).toFixed(2)} ETB</span>
+                        <span className="font-mono">{Number(item.subtotalPrice).toFixed(2)} {t("common.etb")}</span>
                       </div>
                     ))}
                   </div>
 
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
                     <span className="text-slate-500 dark:text-slate-400 font-normal">
-                      Total (inc. fees)
+                      {t("admin.totalIncFees")}
                     </span>
-                    <span className="text-orange-600 font-mono">{Number(ord.totalPrice).toFixed(2)} ETB</span>
+                    <span className="text-orange-600 font-mono">{Number(ord.totalPrice).toFixed(2)} {t("common.etb")}</span>
                   </div>
                 </div>
               ))}

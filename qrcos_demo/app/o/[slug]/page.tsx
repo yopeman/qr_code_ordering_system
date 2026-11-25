@@ -4,18 +4,14 @@ import React, { useState, useEffect, use, useRef } from "react";
 import Link from "next/link";
 import {
   ChefHat,
-  Clock,
-  CheckCircle2,
   AlertCircle,
-  RefreshCw,
-  ArrowRight,
-  Filter,
   Volume2,
   VolumeX,
   ExternalLink,
   Loader2,
 } from "lucide-react";
 import { checkRestaurantAccess, formatOrderTime } from "@/lib/utils";
+import { useI18n } from "@/components/I18nProvider";
 
 interface OrderTicket {
   _id: string;
@@ -38,6 +34,7 @@ export default function KitchenOrderPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const { t } = useI18n();
 
   const [restaurantName, setRestaurantName] = useState(slug);
   const [restaurantMeta, setRestaurantMeta] = useState<{
@@ -51,7 +48,7 @@ export default function KitchenOrderPage({
   const [soundEnabled, setSoundEnabled] = useState(true);
   const lastOrderCountRef = useRef(0);
 
-  const access = checkRestaurantAccess(restaurantMeta?.status, restaurantMeta?.expiredAt);
+  const access = checkRestaurantAccess(restaurantMeta?.status, restaurantMeta?.expiredAt, t);
 
   const fetchOrders = async () => {
     try {
@@ -130,6 +127,16 @@ export default function KitchenOrderPage({
     }
   };
 
+  const formatTimeAgo = (dateString: string): string => {
+    const diffMs = Date.now() - new Date(dateString).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return t("kitchen.justNow");
+    if (mins === 1) return t("kitchen.oneMinAgo");
+    if (mins < 60) return t("kitchen.minsAgo", { mins });
+    const hours = Math.floor(mins / 60);
+    return t("kitchen.hoursAgo", { hours });
+  };
+
   const filteredOrders =
     activeFilter === "all"
       ? orders
@@ -148,13 +155,13 @@ export default function KitchenOrderPage({
             <ChefHat className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-black text-slate-900 dark:text-white">
-                {restaurantName} Kitchen Display
+                {t("kitchen.title", { name: restaurantName })}
               </h1>
               <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                Live 1s Polling
+                {t("kitchen.livePolling")}
               </span>
               <span
                 className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
@@ -171,7 +178,7 @@ export default function KitchenOrderPage({
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Auto-syncs with customer orders and Telegram kitchen channel callbacks
+              {t("kitchen.subtitle")}
             </p>
           </div>
         </div>
@@ -185,17 +192,17 @@ export default function KitchenOrderPage({
                 ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
                 : "bg-slate-50 dark:bg-slate-900 text-slate-400 border-transparent"
             }`}
-            title="Toggle new order sound chime"
+            title={t("kitchen.soundTitle")}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4" />}
-            <span>Sound {soundEnabled ? "On" : "Off"}</span>
+            <span>{soundEnabled ? t("kitchen.soundOn") : t("kitchen.soundOff")}</span>
           </button>
 
           <Link
             href={`/r/${slug}`}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 transition touch-manipulation"
           >
-            Owner Portal <ExternalLink className="w-3 h-3" />
+            {t("kitchen.ownerPortal")} <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
       </div>
@@ -213,7 +220,7 @@ export default function KitchenOrderPage({
         >
           <AlertCircle className="w-5 h-5 shrink-0" />
           <div className="text-xs">
-            <span className="font-bold">Notice:</span> {access.message} The kitchen cannot receive new orders while the restaurant is not active.
+            <span className="font-bold">{t("kitchen.noticePrefix")}</span> {access.message} {t("kitchen.noticeSuffix")}
           </div>
         </div>
       )}
@@ -229,7 +236,7 @@ export default function KitchenOrderPage({
               : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100"
           }`}
         >
-          <span>All Orders</span>
+          <span>{t("kitchen.allOrders")}</span>
           <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-mono">
             {orders.length}
           </span>
@@ -244,7 +251,7 @@ export default function KitchenOrderPage({
               : "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-800 hover:bg-blue-50/50"
           }`}
         >
-          <span>⏳ Pending</span>
+          <span>⏳ {t("status.pending")}</span>
           <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono">
             {pendingCount}
           </span>
@@ -259,7 +266,7 @@ export default function KitchenOrderPage({
               : "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 border border-slate-200 dark:border-slate-800 hover:bg-amber-50/50"
           }`}
         >
-          <span>👨‍🍳 Preparing</span>
+          <span>👨‍🍳 {t("status.preparing")}</span>
           <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-mono">
             {preparingCount}
           </span>
@@ -274,7 +281,7 @@ export default function KitchenOrderPage({
               : "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:bg-emerald-50/50"
           }`}
         >
-          <span>✅ Completed</span>
+          <span>✅ {t("status.completed")}</span>
           <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono">
             {completedCount}
           </span>
@@ -288,7 +295,7 @@ export default function KitchenOrderPage({
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8">
-          <p className="text-slate-500 text-sm">No orders matching this filter.</p>
+          <p className="text-slate-500 text-sm">{t("kitchen.noMatchingOrders")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -312,7 +319,7 @@ export default function KitchenOrderPage({
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
                       <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                        Table {ticket.table}
+                        {t("common.tableWithNumber", { table: ticket.table })}
                       </span>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {ticket.customerName} • {formatOrderTime(ticket.orderedAt, { includeZone: true })} • <span className="font-mono">{timeAgo}</span>
@@ -328,13 +335,13 @@ export default function KitchenOrderPage({
                           : "bg-blue-500/10 text-blue-600 border border-blue-500/20 animate-pulse"
                       }`}
                     >
-                      {ticket.status}
+                      {t(`status.${ticket.status}`)}
                     </span>
                   </div>
 
                   {ticket.notes && (
                     <div className="mb-3 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-medium">
-                      📝 Note: &quot;{ticket.notes}&quot;
+                      📝 {t("common.note")}: &quot;{ticket.notes}&quot;
                     </div>
                   )}
 
@@ -351,7 +358,7 @@ export default function KitchenOrderPage({
                           </span>
                         </div>
                         <span className="font-mono text-slate-500">
-                          {Number(item.subtotalPrice).toFixed(2)} ETB
+                          {Number(item.subtotalPrice).toFixed(2)} {t("common.etb")}
                         </span>
                       </div>
                     ))}
@@ -362,10 +369,10 @@ export default function KitchenOrderPage({
                 <div className="p-5 pt-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 mt-auto space-y-3">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
                     <span className="text-slate-500 dark:text-slate-400 font-normal">
-                      Total ({ticket.fees?.length || 0} fees incl.)
+                      {t("kitchen.totalWithFees", { count: ticket.fees?.length || 0 })}
                     </span>
                     <span className="font-mono text-orange-600 text-sm">
-                      {Number(ticket.totalPrice).toFixed(2)} ETB
+                      {Number(ticket.totalPrice).toFixed(2)} {t("common.etb")}
                     </span>
                   </div>
 
@@ -381,7 +388,7 @@ export default function KitchenOrderPage({
                           : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
                       }`}
                     >
-                      Pending
+                      {t("status.pending")}
                     </button>
 
                     <button
@@ -394,7 +401,7 @@ export default function KitchenOrderPage({
                           : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
                       }`}
                     >
-                      Preparing
+                      {t("status.preparing")}
                     </button>
 
                     <button
@@ -407,7 +414,7 @@ export default function KitchenOrderPage({
                           : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
                       }`}
                     >
-                      Completed
+                      {t("status.completed")}
                     </button>
                   </div>
                 </div>
@@ -418,14 +425,4 @@ export default function KitchenOrderPage({
       )}
     </div>
   );
-}
-
-function formatTimeAgo(dateString: string): string {
-  const diffMs = Date.now() - new Date(dateString).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "Just now";
-  if (mins === 1) return "1 min ago";
-  if (mins < 60) return `${mins} mins ago`;
-  const hours = Math.floor(mins / 60);
-  return `${hours}h ago`;
 }

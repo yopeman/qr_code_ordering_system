@@ -122,9 +122,12 @@ export function isRestaurantExpired(expiredAt: Date | string | null | undefined)
   return new Date(expiredAt).getTime() < Date.now();
 }
 
+import type { Translator } from "./i18n";
+
 export function checkRestaurantAccess(
   status: string = "active",
-  expiredAt?: Date | string | null
+  expiredAt?: Date | string | null,
+  t?: Translator
 ): RestaurantAccessCheck {
   const isExpired = isRestaurantExpired(expiredAt);
   const normStatus = (status || "active") as RestaurantStatus;
@@ -134,10 +137,12 @@ export function checkRestaurantAccess(
       isOperational: false,
       isExpired,
       status: normStatus,
-      statusLabel: "Suspended",
+      statusLabel: t ? t("status.suspended") : "Suspended",
       badgeVariant: "suspended",
       reason: "suspended",
-      message: "This restaurant is currently suspended by the platform administrator.",
+      message: t
+        ? t("access.suspendedMsg")
+        : "This restaurant is currently suspended by the platform administrator.",
     };
   }
 
@@ -147,10 +152,12 @@ export function checkRestaurantAccess(
       isOperational: false,
       isExpired: true,
       status: normStatus,
-      statusLabel: "Subscription Expired",
+      statusLabel: t ? t("status.expired") : "Subscription Expired",
       badgeVariant: "expired",
       reason: "expired",
-      message: `This restaurant's subscription expired on ${dateStr}.`,
+      message: t
+        ? t("access.expiredMsg", { date: dateStr })
+        : `This restaurant's subscription expired on ${dateStr}.`,
     };
   }
 
@@ -159,10 +166,12 @@ export function checkRestaurantAccess(
       isOperational: false,
       isExpired: false,
       status: normStatus,
-      statusLabel: "Inactive",
+      statusLabel: t ? t("status.inactive") : "Inactive",
       badgeVariant: "inactive",
       reason: "inactive",
-      message: "This restaurant is currently inactive and not accepting orders.",
+      message: t
+        ? t("access.inactiveMsg")
+        : "This restaurant is currently inactive and not accepting orders.",
     };
   }
 
@@ -170,8 +179,8 @@ export function checkRestaurantAccess(
     isOperational: true,
     isExpired: false,
     status: "active",
-    statusLabel: "Active",
+    statusLabel: t ? t("status.active") : "Active",
     badgeVariant: "active",
-    message: "Open for orders",
+    message: t ? t("access.activeMsg") : "Open for orders",
   };
 }

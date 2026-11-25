@@ -3,16 +3,14 @@
 import React, { useState, useRef } from "react";
 import {
   Upload,
-  X,
   Loader2,
-  Image as ImageIcon,
-  Plus,
   Star,
   ArrowLeft,
   ArrowRight,
   Link as LinkIcon,
   Trash2,
 } from "lucide-react";
+import { useI18n } from "./I18nProvider";
 
 interface MultiImageUploadProps {
   urls: string[];
@@ -26,9 +24,11 @@ export function MultiImageUpload({
   urls = [],
   onChange,
   folder = "qrcos/dishes",
-  label = "Dish Photos",
+  label,
   maxImages = 8,
 }: MultiImageUploadProps) {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t("multiImg.defaultLabel");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +44,11 @@ export function MultiImageUpload({
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (!file.type.startsWith("image/")) {
-        setError(`"${file.name}" is not a supported image file.`);
+        setError(t("multiImg.invalidType", { name: file.name }));
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError(`"${file.name}" exceeds the 5MB file size limit.`);
+        setError(t("multiImg.maxSize", { name: file.name }));
         return;
       }
       validFiles.push(file);
@@ -57,12 +57,12 @@ export function MultiImageUpload({
     if (validFiles.length === 0) return;
 
     if (urls.length + validFiles.length > maxImages) {
-      setError(`You can only upload up to ${maxImages} images per dish.`);
+      setError(t("multiImg.maxCount", { max: maxImages }));
       return;
     }
 
     setUploading(true);
-    setUploadProgress(`Uploading ${validFiles.length} photo${validFiles.length > 1 ? "s" : ""}...`);
+    setUploadProgress(t("multiImg.uploading", { count: validFiles.length }));
 
     try {
       const formData = new FormData();
@@ -98,7 +98,7 @@ export function MultiImageUpload({
     e.preventDefault();
     if (!urlInput.trim()) return;
     if (urls.length >= maxImages) {
-      setError(`Maximum of ${maxImages} images reached.`);
+      setError(t("multiImg.maxReached", { max: maxImages }));
       return;
     }
     onChange([...urls, urlInput.trim()]);
@@ -150,10 +150,10 @@ export function MultiImageUpload({
       <div className="flex items-center justify-between">
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            {label}
+            {resolvedLabel}
           </label>
           <p className="text-[11px] text-slate-400">
-            Upload multiple photos. The first image serves as the cover photo on menus.
+            {t("multiImg.subtitle")}
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export function MultiImageUpload({
             className="text-[11px] text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1 font-medium"
           >
             <LinkIcon className="w-3 h-3" />
-            {showUrlInput ? "Hide URL Input" : "Add via URL"}
+            {showUrlInput ? t("multiImg.hideUrl") : t("multiImg.addUrlBtn")}
           </button>
         </div>
       </div>
@@ -188,7 +188,7 @@ export function MultiImageUpload({
             disabled={!urlInput.trim() || urls.length >= maxImages}
             className="px-3 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-semibold transition"
           >
-            Add URL
+            {t("multiImg.addUrl")}
           </button>
         </div>
       )}
@@ -218,7 +218,7 @@ export function MultiImageUpload({
           {uploading ? (
             <div className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400 font-medium py-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>{uploadProgress || "Uploading..."}</span>
+              <span>{uploadProgress || t("multiImg.uploadingSimple")}</span>
             </div>
           ) : (
             <>
@@ -227,12 +227,12 @@ export function MultiImageUpload({
               </div>
               <div className="text-xs text-slate-600 dark:text-slate-300">
                 <span className="font-semibold text-orange-600 dark:text-orange-400">
-                  Click to select multiple images
+                  {t("multiImg.clickSelect")}
                 </span>{" "}
-                or drag & drop
+                {t("multiImg.orDrop")}
               </div>
               <p className="text-[10px] text-slate-400">
-                PNG, JPG, WEBP, SVG up to 5MB each (supports multiple selection)
+                {t("multiImg.formats")}
               </p>
             </>
           )}
@@ -265,7 +265,7 @@ export function MultiImageUpload({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={url}
-                    alt={`Dish photo ${index + 1}`}
+                    alt={`${index + 1}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
@@ -273,7 +273,7 @@ export function MultiImageUpload({
                   {/* Cover Badge */}
                   {isCover && (
                     <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-600 text-white text-[10px] font-bold shadow-md">
-                      <Star className="w-2.5 h-2.5 fill-current" /> Cover
+                      <Star className="w-2.5 h-2.5 fill-current" /> {t("multiImg.cover")}
                     </span>
                   )}
 
@@ -285,8 +285,8 @@ export function MultiImageUpload({
                       handleRemove(index);
                     }}
                     className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-red-600 text-white transition shadow opacity-90 group-hover:opacity-100"
-                    title="Remove photo"
-                    aria-label="Remove photo"
+                    title={t("multiImg.remove")}
+                    aria-label={t("multiImg.remove")}
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -300,10 +300,10 @@ export function MultiImageUpload({
                       onClick={() => handleSetCover(index)}
                       className="text-orange-600 dark:text-orange-400 font-semibold hover:underline"
                     >
-                      Make Cover
+                      {t("multiImg.makeCover")}
                     </button>
                   ) : (
-                    <span className="text-slate-400 font-medium">Main</span>
+                    <span className="text-slate-400 font-medium">{t("multiImg.main")}</span>
                   )}
 
                   <div className="flex items-center gap-0.5 ml-auto">
@@ -312,7 +312,7 @@ export function MultiImageUpload({
                       disabled={index === 0}
                       onClick={() => handleMove(index, "left")}
                       className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-20 transition"
-                      title="Move earlier"
+                      title={t("multiImg.moveLeft")}
                     >
                       <ArrowLeft className="w-3 h-3" />
                     </button>
@@ -321,7 +321,7 @@ export function MultiImageUpload({
                       disabled={index === urls.length - 1}
                       onClick={() => handleMove(index, "right")}
                       className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-20 transition"
-                      title="Move later"
+                      title={t("multiImg.moveRight")}
                     >
                       <ArrowRight className="w-3 h-3" />
                     </button>

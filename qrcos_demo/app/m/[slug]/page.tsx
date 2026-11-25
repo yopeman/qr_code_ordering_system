@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Modal } from "@/components/Modal";
 import { DishImageGallery } from "@/components/DishImageGallery";
+import { useI18n } from "@/components/I18nProvider";
 import { checkRestaurantAccess, formatOrderDateTime } from "@/lib/utils";
 import {
   UtensilsCrossed,
@@ -16,9 +17,7 @@ import {
   Clock,
   ChefHat,
   AlertCircle,
-  X,
   History,
-  Info,
   Loader2,
   Sparkles,
   Image as ImageIcon,
@@ -63,6 +62,7 @@ export default function DinerMenuPage({
 }) {
   const { slug } = use(params);
   const searchParams = useSearchParams();
+  const { t } = useI18n();
 
   // Table number from URL query ?table=12
   const queryTable = searchParams.get("table") || "";
@@ -93,7 +93,7 @@ export default function DinerMenuPage({
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
 
   // Computed Restaurant Access Status (checks status and expiredAt)
-  const access = checkRestaurantAccess(restaurant?.status, restaurant?.expiredAt);
+  const access = checkRestaurantAccess(restaurant?.status, restaurant?.expiredAt, t);
 
   // Active Placed Order & 1s Polling
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
@@ -130,7 +130,7 @@ export default function DinerMenuPage({
         if (data.order && data.order.status === "pending") {
           handleStartEditOrder(data.order);
         } else if (data.order) {
-          alert("Only pending orders can be edited.");
+          alert(t("menu.onlyPendingEditable"));
         }
       } catch (err) {
         console.error("Failed to load order for editing:", err);
@@ -263,7 +263,7 @@ export default function DinerMenuPage({
 
   const addToCart = (menu: MenuItem) => {
     if (!access.isOperational) {
-      alert(access.message || "This restaurant is currently not accepting orders.");
+      alert(access.message || t("menu.notAcceptingOrders"));
       return;
     }
     setCart((prev) => {
@@ -331,7 +331,7 @@ export default function DinerMenuPage({
   // Submit or Update Order
   const handlePlaceOrder = async () => {
     if (!access.isOperational) {
-      alert(access.message || "This restaurant is currently not accepting orders.");
+      alert(access.message || t("menu.notAcceptingOrders"));
       return;
     }
 
@@ -367,7 +367,7 @@ export default function DinerMenuPage({
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || (isEditing ? "Failed to update order" : "Failed to place order"));
+        alert(data.error || (isEditing ? t("menu.failedUpdateOrder") : t("menu.failedPlaceOrder")));
         return;
       }
 
@@ -400,8 +400,6 @@ export default function DinerMenuPage({
         }
         setEditingOrderId(null);
       } else {
-        // Store in localStorage as required by spec:
-        // "can place order, and store order id to localStorage"
         const existingSaved = JSON.parse(
           localStorage.getItem("qrcos_customer_orders") || "[]"
         );
@@ -425,7 +423,7 @@ export default function DinerMenuPage({
       setCart([]);
       setCartDrawerOpen(false);
     } catch (err: any) {
-      alert(err.message || "Failed to submit order");
+      alert(err.message || t("menu.failedSubmitOrder"));
     } finally {
       setPlacingOrder(false);
     }
@@ -463,7 +461,7 @@ export default function DinerMenuPage({
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (!confirm("Are you sure you want to cancel and delete this pending order?")) {
+    if (!confirm(t("menu.confirmCancelOrder"))) {
       return;
     }
 
@@ -474,7 +472,7 @@ export default function DinerMenuPage({
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Failed to cancel order");
+        alert(data.error || t("menu.failedCancelOrder"));
         return;
       }
 
@@ -503,7 +501,7 @@ export default function DinerMenuPage({
         setCartDrawerOpen(false);
       }
     } catch (err: any) {
-      alert(err.message || "Failed to cancel order");
+      alert(err.message || t("menu.failedCancelOrder"));
     } finally {
       setCancellingOrderId(null);
     }
@@ -531,20 +529,27 @@ export default function DinerMenuPage({
     return (
       <div className="flex-1 flex items-center justify-center p-8 text-center">
         <div>
-          <h2 className="text-xl font-bold mb-2">Restaurant Not Found</h2>
+          <h2 className="text-xl font-bold mb-2">{t("menu.notFoundTitle")}</h2>
           <p className="text-sm text-slate-500 mb-4">
-            Could not locate restaurant &quot;{slug}&quot;.
+            {t("menu.notFoundDesc", { slug })}
           </p>
           <Link
             href="/"
             className="px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-semibold"
           >
-            Return Home
+            {t("menu.returnHome")}
           </Link>
         </div>
       </div>
     );
   }
+
+  const getOrderStatusLabel = (status: string) => {
+    if (status === "pending" || status === "preparing" || status === "completed") {
+      return t(`status.${status}`);
+    }
+    return status;
+  };
 
   return (
     <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 pb-28 space-y-6">
@@ -599,14 +604,14 @@ export default function DinerMenuPage({
               }}
               className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/80 text-xs font-bold hover:scale-105 transition shadow-sm"
             >
-              <span>Table {table || "Not Set"}</span>
-              <span className="text-[10px] font-normal underline">Change</span>
+              <span>{t("common.tableWithNumber", { table: table || t("common.notSet") })}</span>
+              <span className="text-[10px] font-normal underline">{t("common.change")}</span>
             </button>
 
             <Link
               href="/my-history"
               className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-              title="View past orders"
+              title={t("menu.viewPastOrders")}
             >
               <History className="w-5 h-5" />
             </Link>
@@ -615,8 +620,8 @@ export default function DinerMenuPage({
               type="button"
               onClick={openHistoryModal}
               className="p-2 rounded-xl text-slate-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-slate-800 transition cursor-pointer"
-              title={`View orders at ${restaurant.name}`}
-              aria-label={`View orders at ${restaurant.name}`}
+              title={t("menu.viewRestOrders", { name: restaurant.name })}
+              aria-label={t("menu.viewRestOrders", { name: restaurant.name })}
             >
               <ReceiptText className="w-5 h-5" />
             </button>
@@ -650,7 +655,7 @@ export default function DinerMenuPage({
         >
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-current" />
           <div>
-            <h3 className="text-sm font-bold">Ordering Currently Unavailable</h3>
+            <h3 className="text-sm font-bold">{t("menu.unavailableTitle")}</h3>
             <p className="text-xs mt-0.5 opacity-90">{access.message}</p>
           </div>
         </div>
@@ -659,7 +664,7 @@ export default function DinerMenuPage({
       {/* ACTIVE ORDER LIVE TRACKER BANNER (1-Second Polling) */}
       {activeOrderData && (
         <div className="rounded-3xl bg-linear-to-r from-orange-600 to-amber-600 p-6 text-white shadow-xl shadow-orange-500/20 space-y-4 animate-in fade-in duration-300">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="p-2 rounded-xl bg-white/20 backdrop-blur-md">
                 {activeOrderData.status === "completed" ? (
@@ -672,10 +677,10 @@ export default function DinerMenuPage({
               </span>
               <div>
                 <h3 className="font-extrabold text-base">
-                  Order Status: {activeOrderData.status.toUpperCase()}
+                  {t("menu.orderStatusTitle", { status: getOrderStatusLabel(activeOrderData.status).toUpperCase() })}
                 </h3>
                 <p className="text-xs text-orange-100">
-                  Live polling updates every 1s from kitchen
+                  {t("menu.livePollingDesc")}
                 </p>
               </div>
             </div>
@@ -687,24 +692,24 @@ export default function DinerMenuPage({
                     type="button"
                     onClick={() => handleStartEditOrder(activeOrderData)}
                     className="text-xs bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg transition cursor-pointer inline-flex items-center gap-1"
-                    title="Edit pending order"
+                    title={t("menu.editPendingTitle")}
                   >
                     <Edit2 className="w-3.5 h-3.5" />
-                    <span>Edit</span>
+                    <span>{t("common.edit")}</span>
                   </button>
                   <button
                     type="button"
                     disabled={cancellingOrderId === activeOrderData._id}
                     onClick={() => handleCancelOrder(activeOrderData._id)}
                     className="text-xs bg-rose-500/80 hover:bg-rose-500 px-2.5 py-1.5 rounded-lg transition cursor-pointer inline-flex items-center gap-1 disabled:opacity-50"
-                    title="Cancel pending order"
+                    title={t("menu.cancelPendingTitle")}
                   >
                     {cancellingOrderId === activeOrderData._id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Trash2 className="w-3.5 h-3.5" />
                     )}
-                    <span>Cancel</span>
+                    <span>{t("common.cancel")}</span>
                   </button>
                 </>
               )}
@@ -716,7 +721,7 @@ export default function DinerMenuPage({
                 }}
                 className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition cursor-pointer"
               >
-                Dismiss
+                {t("common.dismiss")}
               </button>
             </div>
           </div>
@@ -731,7 +736,7 @@ export default function DinerMenuPage({
                   : "bg-white/10 text-white/60"
                 }`}
             >
-              1. ⏳ Pending
+              {t("menu.step1Pending")}
             </div>
 
             <div
@@ -741,7 +746,7 @@ export default function DinerMenuPage({
                   : "bg-white/10 text-white/60"
                 }`}
             >
-              2. 👨‍🍳 Preparing
+              {t("menu.step2Preparing")}
             </div>
 
             <div
@@ -750,7 +755,7 @@ export default function DinerMenuPage({
                   : "bg-white/10 text-white/60"
                 }`}
             >
-              3. ✅ Ready
+              {t("menu.step3Ready")}
             </div>
           </div>
         </div>
@@ -764,7 +769,7 @@ export default function DinerMenuPage({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search dishes, tibs, shiro, drinks... (ምግብ ይፈልጉ)"
+            placeholder={t("menu.searchPlaceholder")}
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"
           />
         </div>
@@ -781,7 +786,7 @@ export default function DinerMenuPage({
                   : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100"
                 }`}
             >
-              {cat}
+              {cat === "All" ? t("common.all") : cat}
             </button>
           ))}
         </div>
@@ -790,7 +795,7 @@ export default function DinerMenuPage({
       {/* DISHES LIST */}
       {filteredMenus.length === 0 ? (
         <div className="py-20 text-center text-slate-400 text-sm">
-          No dishes found matching your selection.
+          {t("menu.noDishesFound")}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -807,7 +812,7 @@ export default function DinerMenuPage({
                     type="button"
                     onClick={() => setSelectedDish(dish)}
                     className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shrink-0 relative bg-slate-100 focus:outline-none"
-                    title="Click to view details and full photo"
+                    title={t("menu.viewDetailsTitle")}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -843,7 +848,7 @@ export default function DinerMenuPage({
                         {dish.name}
                       </button>
                       <span className="font-extrabold text-sm text-slate-900 dark:text-white font-mono whitespace-nowrap">
-                        {Number(dish.price).toFixed(2)} ETB
+                        {Number(dish.price).toFixed(2)} {t("common.etb")}
                       </span>
                     </div>
 
@@ -860,7 +865,7 @@ export default function DinerMenuPage({
 
                     {!access.isOperational ? (
                       <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-semibold">
-                        Unavailable
+                        {t("menu.unavailable")}
                       </span>
                     ) : inCart > 0 ? (
                       <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-950/50 p-1 rounded-xl border border-orange-200 dark:border-orange-800">
@@ -868,7 +873,7 @@ export default function DinerMenuPage({
                           type="button"
                           onClick={() => updateCartQuantity(dish._id, -1)}
                           className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 text-orange-600 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 touch-manipulation"
-                          aria-label="Decrease quantity"
+                          aria-label={t("menu.decreaseQty")}
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
@@ -879,7 +884,7 @@ export default function DinerMenuPage({
                           type="button"
                           onClick={() => addToCart(dish)}
                           className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 touch-manipulation"
-                          aria-label="Increase quantity"
+                          aria-label={t("menu.increaseQty")}
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -890,7 +895,7 @@ export default function DinerMenuPage({
                         onClick={() => addToCart(dish)}
                         className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-500/10 text-orange-600 hover:bg-orange-600 hover:text-white font-bold text-xs transition active:scale-95 touch-manipulation"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Add
+                        <Plus className="w-3.5 h-3.5" /> {t("common.add")}
                       </button>
                     )}
                   </div>
@@ -915,15 +920,15 @@ export default function DinerMenuPage({
               </span>
               <div className="text-left">
                 <span className="text-xs uppercase tracking-wider font-semibold opacity-90 block">
-                  Table {table}
+                  {t("common.tableWithNumber", { table })}
                 </span>
-                <span className="font-bold text-sm">View Order Basket</span>
+                <span className="font-bold text-sm">{t("menu.viewBasket")}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-base font-mono">
-                {grandTotal.toFixed(2)} ETB
+                {grandTotal.toFixed(2)} {t("common.etb")}
               </span>
               <ShoppingBag className="w-5 h-5" />
             </div>
@@ -937,8 +942,8 @@ export default function DinerMenuPage({
         onClose={() => setCartDrawerOpen(false)}
         title={
           editingOrderId
-            ? `Edit Order — Table ${table}`
-            : `Your Basket — Table ${table}`
+            ? t("menu.editOrderTitle", { table })
+            : t("menu.yourBasketTitle", { table })
         }
         maxWidth="max-w-lg"
       >
@@ -952,7 +957,7 @@ export default function DinerMenuPage({
                     {item.menu.name}
                   </h4>
                   <p className="text-xs text-slate-500 font-mono">
-                    {Number(item.menu.price).toFixed(2)} ETB each
+                    {Number(item.menu.price).toFixed(2)} {t("common.etb")} {t("common.each")}
                   </p>
                 </div>
 
@@ -977,14 +982,14 @@ export default function DinerMenuPage({
                 </div>
 
                 <span className="font-bold text-sm font-mono text-slate-900 dark:text-white min-w-16 text-right whitespace-nowrap">
-                  {(item.menu.price * item.quantity).toFixed(2)} ETB
+                  {(item.menu.price * item.quantity).toFixed(2)} {t("common.etb")}
                 </span>
 
                 <button
                   type="button"
                   onClick={() => removeFromCart(item.menu._id)}
-                  aria-label="Remove dish"
-                  title="Remove dish"
+                  aria-label={t("menu.removeDish")}
+                  title={t("menu.removeDish")}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -997,26 +1002,26 @@ export default function DinerMenuPage({
           <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Your Name (Optional)
+                {t("menu.yourName")}
               </label>
               <input
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Abebe / Almaz"
+                placeholder={t("menu.yourNamePlaceholder")}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Special Kitchen Instructions / Allergies
+                {t("menu.specialNotes")}
               </label>
               <textarea
                 rows={3}
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="e.g. Extra karia, less spicy, well done (ቃሪያ በጎን)"
+                placeholder={t("menu.specialNotesPlaceholder")}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
               />
             </div>
@@ -1025,8 +1030,8 @@ export default function DinerMenuPage({
           {/* Price Breakdown */}
           <div className="space-y-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-xs">
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span>Items Subtotal:</span>
-              <span className="font-mono font-medium">{subtotal.toFixed(2)} ETB</span>
+              <span>{t("menu.itemsSubtotal")}</span>
+              <span className="font-mono font-medium">{subtotal.toFixed(2)} {t("common.etb")}</span>
             </div>
 
             {calculatedFees.map((fee, idx) => (
@@ -1034,13 +1039,13 @@ export default function DinerMenuPage({
                 <span>
                   {fee.feeName} {fee.type === "percent" ? `(${fee.rate}%)` : ""}:
                 </span>
-                <span className="font-mono font-medium">{fee.amount.toFixed(2)} ETB</span>
+                <span className="font-mono font-medium">{fee.amount.toFixed(2)} {t("common.etb")}</span>
               </div>
             ))}
 
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between font-extrabold text-sm text-slate-900 dark:text-white">
-              <span>Grand Total:</span>
-              <span className="font-mono text-orange-600">{grandTotal.toFixed(2)} ETB</span>
+              <span>{t("menu.grandTotal")}</span>
+              <span className="font-mono text-orange-600">{grandTotal.toFixed(2)} {t("common.etb")}</span>
             </div>
           </div>
 
@@ -1060,14 +1065,14 @@ export default function DinerMenuPage({
               {placingOrder ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {editingOrderId ? "Saving Changes..." : "Dispatching to Kitchen..."}
+                  {editingOrderId ? t("menu.savingChanges") : t("menu.dispatching")}
                 </>
               ) : !access.isOperational ? (
-                "Ordering Unavailable"
+                t("menu.orderingUnavailable")
               ) : editingOrderId ? (
-                <>Save Order Changes ({grandTotal.toFixed(2)} ETB)</>
+                <>{t("menu.saveOrderChanges", { total: grandTotal.toFixed(2) })}</>
               ) : (
-                <>Confirm & Place Order ({grandTotal.toFixed(2)} ETB)</>
+                <>{t("menu.confirmPlaceOrder", { total: grandTotal.toFixed(2) })}</>
               )}
             </button>
 
@@ -1082,7 +1087,7 @@ export default function DinerMenuPage({
                 }}
                 className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs transition"
               >
-                Cancel Editing
+                {t("menu.cancelEditing")}
               </button>
             )}
           </div>
@@ -1108,7 +1113,7 @@ export default function DinerMenuPage({
                 {selectedDish.category}
               </span>
               <span className="text-lg font-extrabold font-mono text-slate-900 dark:text-white">
-                {Number(selectedDish.price).toFixed(2)} ETB
+                {Number(selectedDish.price).toFixed(2)} {t("common.etb")}
               </span>
             </div>
 
@@ -1119,7 +1124,7 @@ export default function DinerMenuPage({
             {selectedDish.detail?.length > 0 && (
               <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <h5 className="text-[11px] font-bold uppercase text-slate-400">
-                  Dish Information
+                  {t("menu.dishInfo")}
                 </h5>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {selectedDish.detail.map((d, i) => (
@@ -1147,8 +1152,8 @@ export default function DinerMenuPage({
               className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {access.isOperational
-                ? `Add to Basket (${Number(selectedDish.price).toFixed(2)} ETB)`
-                : "Ordering Unavailable"}
+                ? t("menu.addToBasket", { price: Number(selectedDish.price).toFixed(2) })
+                : t("menu.orderingUnavailable")}
             </button>
           </div>
         </Modal>
@@ -1158,12 +1163,12 @@ export default function DinerMenuPage({
       <Modal
         isOpen={tableModalOpen}
         onClose={() => setTableModalOpen(false)}
-        title="Enter Your Table Number"
+        title={t("menu.enterTableTitle")}
         maxWidth="max-w-sm"
       >
         <form onSubmit={handleConfirmTable} className="space-y-4">
           <p className="text-xs text-slate-500">
-            Please enter the table number shown on your table stand or ask your server.
+            {t("menu.enterTableDesc")}
           </p>
           <input
             type="text"
@@ -1172,14 +1177,14 @@ export default function DinerMenuPage({
             required
             value={tableInput}
             onChange={(e) => setTableInput(e.target.value)}
-            placeholder="e.g. 4"
+            placeholder={t("menu.enterTablePlaceholder")}
             className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-center font-bold text-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
           <button
             type="submit"
             className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs transition"
           >
-            Confirm Table
+            {t("menu.confirmTable")}
           </button>
         </form>
       </Modal>
@@ -1188,7 +1193,7 @@ export default function DinerMenuPage({
       <Modal
         isOpen={historyModalOpen}
         onClose={() => setHistoryModalOpen(false)}
-        title={`Your Orders — ${restaurant.name}`}
+        title={t("menu.yourOrdersTitle", { name: restaurant.name })}
         maxWidth="max-w-lg"
       >
         <div className="space-y-4">
@@ -1200,10 +1205,10 @@ export default function DinerMenuPage({
             <div className="py-10 text-center space-y-2">
               <ShoppingBag className="w-9 h-9 mx-auto text-slate-300 dark:text-slate-600" />
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                No orders at {restaurant.name} yet
+                {t("menu.noOrdersHere", { name: restaurant.name })}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Orders you place here will appear in this list with live status updates.
+                {t("menu.noOrdersHereDesc")}
               </p>
             </div>
           ) : (
@@ -1222,7 +1227,7 @@ export default function DinerMenuPage({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          Table {live?.table || ref.table}
+                          {t("common.tableWithNumber", { table: live?.table || ref.table })}
                         </span>
                         <span className="text-[11px] text-slate-400">
                           {formatOrderDateTime(live?.orderedAt || ref.orderedAt)}
@@ -1245,7 +1250,7 @@ export default function DinerMenuPage({
                         ) : (
                           <Clock className="w-3 h-3" />
                         )}
-                        <span className="capitalize">{status}</span>
+                        <span>{getOrderStatusLabel(status)}</span>
                       </span>
                     </div>
 
@@ -1257,7 +1262,7 @@ export default function DinerMenuPage({
                               {it.quantity}× {it.name}
                             </span>
                             <span className="font-mono text-slate-500">
-                              {Number(it.subtotalPrice ?? it.unitPrice * it.quantity).toFixed(2)} ETB
+                              {Number(it.subtotalPrice ?? it.unitPrice * it.quantity).toFixed(2)} {t("common.etb")}
                             </span>
                           </div>
                         ))}
@@ -1266,7 +1271,7 @@ export default function DinerMenuPage({
 
                     <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2">
                       <span className="text-xs font-extrabold font-mono text-slate-900 dark:text-white">
-                        Total: {Number(total).toFixed(2)} ETB
+                        {t("common.total")}: {Number(total).toFixed(2)} {t("common.etb")}
                       </span>
 
                       <div className="flex items-center gap-3">
@@ -1278,7 +1283,7 @@ export default function DinerMenuPage({
                               className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-orange-400 cursor-pointer"
                             >
                               <Edit2 className="w-3 h-3" />
-                              <span>Edit</span>
+                              <span>{t("common.edit")}</span>
                             </button>
                             <button
                               type="button"
@@ -1291,7 +1296,7 @@ export default function DinerMenuPage({
                               ) : (
                                 <Trash2 className="w-3 h-3" />
                               )}
-                              <span>Cancel</span>
+                              <span>{t("common.cancel")}</span>
                             </button>
                           </>
                         )}
@@ -1305,7 +1310,7 @@ export default function DinerMenuPage({
                           }}
                           className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline cursor-pointer"
                         >
-                          Track Live
+                          {t("menu.trackLive")}
                         </button>
                       </div>
                     </div>
@@ -1322,7 +1327,7 @@ export default function DinerMenuPage({
               onClick={() => setHistoryModalOpen(false)}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400 transition"
             >
-              <span>View All Order History</span>
+              <span>{t("menu.viewAllHistory")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

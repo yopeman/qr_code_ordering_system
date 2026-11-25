@@ -19,120 +19,111 @@ import {
   FileSpreadsheet,
   Zap,
 } from "lucide-react";
+import { getServerI18n } from "@/lib/i18n/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { t } = await getServerI18n();
+
   const portalShowcases = [
     {
-      title: "Public Diner Menu",
-      audience: "For Guests & Diners",
-      subtitle: "Instant Mobile Table Experience",
-      description:
-        "Contactless dining at its finest. Guests scan table QR stands, browse vivid food photos with authentic Ethiopian descriptions, customize notes (ቃሪያ በጎን), and order in seconds without downloading any app.",
+      title: t("home.portal1.title"),
+      audience: t("home.portal1.audience"),
+      description: t("home.portal1.desc"),
       href: "/m/habesha-restaurant?table=4",
       icon: UtensilsCrossed,
       color: "from-orange-600 to-amber-600",
-      accent: "text-orange-500",
-      cta: "Explore Diner Experience",
-      badge: "Table 4 Demo",
+      cta: t("home.portal1.cta"),
+      badge: t("home.portal1.badge"),
     },
     {
-      title: "Kitchen Live Dispatcher",
-      audience: "For Chefs & Kitchen Staff",
-      subtitle: "Paperless Real-Time Kitchen Display",
-      description:
-        "Incoming tickets appear instantly with audio-visual alerts and itemized details. Kitchen teams transition statuses with a single tap (Pending → Preparing → Served), automatically synced with staff Telegram channels.",
+      title: t("home.portal2.title"),
+      audience: t("home.portal2.audience"),
+      description: t("home.portal2.desc"),
       href: "/o/habesha-restaurant",
       icon: ChefHat,
       color: "from-rose-600 to-pink-600",
-      accent: "text-rose-500",
-      cta: "View Kitchen Display",
-      badge: "Real-Time Sync",
+      cta: t("home.portal2.cta"),
+      badge: t("home.portal2.badge"),
     },
     {
-      title: "Restaurant Owner Portal",
-      audience: "For Managers & Owners",
-      subtitle: "Complete Menu & Venue Control",
-      description:
-        "Effortlessly manage menus, upload dish photos, adjust ETB prices instantly, configure Fasting (የጾም) specials, manage 15% VAT and service charges, and generate high-resolution printable table QR stand cards.",
+      title: t("home.portal3.title"),
+      audience: t("home.portal3.audience"),
+      description: t("home.portal3.desc"),
       href: "/r/habesha-restaurant",
       icon: Store,
       color: "from-emerald-600 to-teal-600",
-      accent: "text-emerald-500",
-      cta: "Open Manager Portal",
-      badge: "Habesha Restaurant",
+      cta: t("home.portal3.cta"),
+      badge: t("home.portal3.badge"),
     },
     {
-      title: "Multi-Venue Administration",
-      audience: "For Hospitality Groups & Hotels",
-      subtitle: "Centralized Enterprise Governance",
-      description:
-        "Oversee multiple branches, cafes, and hotel restaurant concepts from a single dashboard. Monitor live order volume, manage venue accounts, and enforce standard brand guidelines across all locations.",
+      title: t("home.portal4.title"),
+      audience: t("home.portal4.audience"),
+      description: t("home.portal4.desc"),
       href: "/admin",
       icon: ShieldCheck,
       color: "from-blue-600 to-indigo-600",
-      accent: "text-blue-500",
-      cta: "Launch Venue Admin",
-      badge: "Group Management",
+      cta: t("home.portal4.cta"),
+      badge: t("home.portal4.badge"),
     },
   ];
 
   const venueTypes = [
     {
       icon: UtensilsCrossed,
-      title: "Traditional Restaurants",
-      amharic: "ባህላዊ ምግብ ቤቶች",
-      desc: "Perfect for sizzling clay pot tibs, slow-cooked festive wats, beyaynetu platters, and coffee ceremonies with high guest volumes.",
+      title: t("home.venue1.title"),
+      sub: t("home.venue1.sub"),
+      desc: t("home.venue1.desc"),
     },
     {
       icon: Coffee,
-      title: "Cafes & Roasteries",
-      amharic: "ካፌዎች እና ኬክ ቤቶች",
-      desc: "Speed up morning rushes for macchiatos, chechebsa, and pastries with rapid table and counter QR ordering.",
+      title: t("home.venue2.title"),
+      sub: t("home.venue2.sub"),
+      desc: t("home.venue2.desc"),
     },
     {
       icon: Building2,
-      title: "Hotels & Resorts",
-      amharic: "ሆቴሎች እና ሪዞርቶች",
-      desc: "Enable effortless poolside ordering, patio dining, and room service without guests having to call the front desk.",
+      title: t("home.venue3.title"),
+      sub: t("home.venue3.sub"),
+      desc: t("home.venue3.desc"),
     },
     {
       icon: Wine,
-      title: "Lounges & Bars",
-      amharic: "ላውንጆች እና ክበቦች",
-      desc: "Eliminate crowded bar queues by letting patrons reorder drinks, appetizers, and snacks directly from their seats.",
+      title: t("home.venue4.title"),
+      sub: t("home.venue4.sub"),
+      desc: t("home.venue4.desc"),
     },
   ];
 
   const businessPillars = [
     {
       icon: TrendingUp,
-      title: "Higher Average Order Value",
-      desc: "Rich dish photography, dietary tags (Fasting, Spice Level), and seamless beverage reordering increase customer spend by up to 30%.",
+      title: t("home.pillar1.title"),
+      desc: t("home.pillar1.desc"),
     },
     {
       icon: Send,
-      title: "Instant Telegram Dispatch",
-      desc: "Orders instantly notify kitchen display screens and staff Telegram channels with interactive status buttons for swift coordination.",
+      title: t("home.pillar2.title"),
+      desc: t("home.pillar2.desc"),
     },
     {
       icon: FileSpreadsheet,
-      title: "Zero Menu Reprinting Costs",
-      desc: "Change dish prices, highlight daily specials, or switch to Fasting (የጾም) menus in seconds without paying for paper printing.",
+      title: t("home.pillar3.title"),
+      desc: t("home.pillar3.desc"),
     },
     {
       icon: Smartphone,
-      title: "Zero App Download for Diners",
-      desc: "Guests simply point their mobile camera at the table stand. Works on all iOS and Android devices without installing any apps.",
+      title: t("home.pillar4.title"),
+      desc: t("home.pillar4.desc"),
     },
     {
       icon: Clock,
-      title: "Faster Table Turnover",
-      desc: "Diners browse and order immediately upon seating, cutting wait times, freeing staff to provide attentive hospitality.",
+      title: t("home.pillar5.title"),
+      desc: t("home.pillar5.desc"),
     },
     {
       icon: Zap,
-      title: "100% Ethiopian Birr (ETB) Ready",
-      desc: "Designed specifically for Ethiopian hospitality with local currency (ETB), automated 15% VAT, and customizable service charges.",
+      title: t("home.pillar6.title"),
+      desc: t("home.pillar6.desc"),
     },
   ];
 
@@ -143,61 +134,61 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-orange-100 dark:bg-orange-950/70 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800 shadow-xs">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Smart Hospitality Platform for Ethiopian Venues</span>
+            <span>{t("home.badge")}</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.15]">
-            Contactless QR Dining, Instant Kitchen Dispatch &{" "}
+            {t("home.heroTitle1")}{" "}
             <span className="bg-linear-to-r from-orange-600 via-amber-600 to-orange-500 bg-clip-text text-transparent">
-              Telegram Order Sync.
+              {t("home.heroTitleHighlight")}
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Empower your restaurant, cafe, or hotel with elegant QR table menus in Ethiopian Birr (ETB). Eliminate order delays, boost sales with mouthwatering dish photos, and synchronize front-of-house with the kitchen in real time.
+            {t("home.heroDesc")}
           </p>
 
           {/* Primary Call to Actions */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <Link
-              href="#"
+              href="/m/habesha-restaurant?table=4"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition-all"
             >
               <UtensilsCrossed className="w-4 h-4" />
-              <span>Experience Guest Menu</span>
+              <span>{t("home.ctaMenu")}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
 
             <Link
-              href="#"
+              href="/r/habesha-restaurant"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-orange-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-sm shadow-xs transition-all"
             >
               <Store className="w-4 h-4 text-orange-600" />
-              <span>Venue Management Portal</span>
+              <span>{t("home.ctaOwner")}</span>
             </Link>
 
             <Link
-              href="#"
+              href="/o/habesha-restaurant"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-all"
             >
               <ChefHat className="w-4 h-4 text-rose-500" />
-              <span>Live Kitchen Board</span>
+              <span>{t("home.ctaKitchen")}</span>
             </Link>
           </div>
 
           {/* Trust Value Badges */}
           <div className="pt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> No App Download Needed
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {t("home.trust1")}
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Priced & Computed in ETB
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {t("home.trust2")}
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Instant Telegram Sync
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {t("home.trust3")}
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> High-DPI Table QR Stands
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {t("home.trust4")}
             </span>
           </div>
         </div>
@@ -207,13 +198,13 @@ export default function HomePage() {
       <section id="demo" className="w-full py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
           <span className="text-xs uppercase font-extrabold tracking-widest text-orange-600 dark:text-orange-400">
-            Complete Digital Hospitality Suite
+            {t("home.suiteEyebrow")}
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
-            Designed for Every Step of Your Service
+            {t("home.suiteTitle")}
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
-            From the moment guests sit down to food preparation and operational analytics, explore the connected ecosystem live in action.
+            {t("home.suiteDesc")}
           </p>
         </div>
 
@@ -222,7 +213,7 @@ export default function HomePage() {
             const Icon = portal.icon;
             return (
               <div
-                key={portal.title}
+                key={portal.href}
                 className="group relative flex flex-col justify-between rounded-3xl bg-white dark:bg-slate-900/90 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 hover:border-orange-500/50 transition-all hover:-translate-y-1"
               >
                 <div>
@@ -271,13 +262,13 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto space-y-16">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <span className="text-xs uppercase font-extrabold tracking-widest text-orange-600 dark:text-orange-400">
-              Effortless Simplicity
+              {t("home.howEyebrow")}
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
-              How the Smart QR Experience Works
+              {t("home.howTitle")}
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              No complex installations, no costly proprietary hardware. Designed to work smoothly on standard phones and tablets.
+              {t("home.howDesc")}
             </p>
           </div>
 
@@ -287,10 +278,10 @@ export default function HomePage() {
                 1
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                1. Diners Scan Table Stand
+                {t("home.step1.title")}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Guests arrive, scan the branded high-resolution QR card with their camera, and their assigned table number is recognized instantly. Zero download or account creation needed.
+                {t("home.step1.desc")}
               </p>
             </div>
 
@@ -299,10 +290,10 @@ export default function HomePage() {
                 2
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                2. Browse Visual Menu & Order
+                {t("home.step2.title")}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Guests view vibrant photos of traditional dishes, fast filters (Fasting / የጾም, Tibs, Drinks), specify kitchen notes (e.g. extra mitmita), review clear ETB pricing with VAT, and place their order.
+                {t("home.step2.desc")}
               </p>
             </div>
 
@@ -311,10 +302,10 @@ export default function HomePage() {
                 3
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                3. Kitchen Prepares & Syncs
+                {t("home.step3.title")}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Chefs receive tickets live on the kitchen display, while waitstaff get automated Telegram alerts. Diners watch the preparation status live on their own phones without waiting for staff.
+                {t("home.step3.desc")}
               </p>
             </div>
           </div>
@@ -325,22 +316,22 @@ export default function HomePage() {
       <section id="features" className="w-full py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
           <span className="text-xs uppercase font-extrabold tracking-widest text-orange-600 dark:text-orange-400">
-            Designed for Hospitality ROI
+            {t("home.roiEyebrow")}
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
-            Built to Grow Your Revenue & Delight Diners
+            {t("home.roiTitle")}
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Address the everyday bottlenecks of dining operations: save time, cut costs, and delight guests with modern hospitality standards.
+            {t("home.roiDesc")}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {businessPillars.map((pillar) => {
+          {businessPillars.map((pillar, idx) => {
             const Icon = pillar.icon;
             return (
               <div
-                key={pillar.title}
+                key={idx}
                 className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-orange-500/40 transition-all space-y-3"
               >
                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 flex items-center justify-center">
@@ -363,22 +354,22 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs uppercase font-extrabold tracking-widest text-orange-600 dark:text-orange-400">
-              Versatile Hospitality Solutions
+              {t("home.venuesEyebrow")}
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-              Trusted by Dining Establishments Across Addis Ababa
+              {t("home.venuesTitle")}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              Whether you operate a heritage cultural restaurant, high-energy cafe, or luxury hotel lounge, QRCOS adapts seamlessly.
+              {t("home.venuesDesc")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {venueTypes.map((venue) => {
+            {venueTypes.map((venue, idx) => {
               const Icon = venue.icon;
               return (
                 <div
-                  key={venue.title}
+                  key={idx}
                   className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between"
                 >
                   <div className="space-y-3">
@@ -390,7 +381,7 @@ export default function HomePage() {
                         {venue.title}
                       </h4>
                       <span className="text-[11px] font-semibold text-orange-600 dark:text-orange-400">
-                        {venue.amharic}
+                        {venue.sub}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -410,13 +401,13 @@ export default function HomePage() {
           <div className="space-y-2 text-center sm:text-left">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold">
               <History className="w-3.5 h-3.5" />
-              <span>Guest Order Tracking</span>
+              <span>{t("home.trackingBadge")}</span>
             </div>
             <h3 className="text-2xl font-black">
-              Already Placed an Order at a Table?
+              {t("home.trackingTitle")}
             </h3>
             <p className="text-xs sm:text-sm text-orange-100 max-w-lg">
-              Check live kitchen preparation status, review your itemized receipt, or easily reorder favorites from your recent orders history.
+              {t("home.trackingDesc")}
             </p>
           </div>
 
@@ -424,7 +415,7 @@ export default function HomePage() {
             href="/my-history"
             className="px-6 py-3.5 rounded-2xl bg-white text-orange-600 hover:bg-orange-50 active:scale-98 font-bold text-xs sm:text-sm whitespace-nowrap shadow-md transition-all shrink-0"
           >
-            Track My Order Status
+            {t("home.trackingCta")}
           </Link>
         </div>
       </section>
@@ -436,34 +427,34 @@ export default function HomePage() {
             <QrCode className="w-4 h-4" />
           </div>
           <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-            QRCOS Hospitality Platform
+            {t("home.footerTitle")}
           </span>
         </div>
 
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-          The contactless QR ordering platform engineered for Ethiopian restaurants, cafes, hotels, and lounges. Powered with real-time Telegram synchronization.
+          {t("home.footerDesc")}
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-600 dark:text-slate-400 font-medium">
-          <Link href="#" className="hover:text-orange-600 transition">
-            Guest Table Menu
+          <Link href="/m/habesha-restaurant?table=4" className="hover:text-orange-600 transition">
+            {t("home.footerLink1")}
           </Link>
-          <Link href="#" className="hover:text-orange-600 transition">
-            Kitchen Live Dispatch
+          <Link href="/o/habesha-restaurant" className="hover:text-orange-600 transition">
+            {t("home.footerLink2")}
           </Link>
-          <Link href="#" className="hover:text-orange-600 transition">
-            Restaurant Owner Portal
+          <Link href="/r/habesha-restaurant" className="hover:text-orange-600 transition">
+            {t("home.footerLink3")}
           </Link>
-          <Link href="#" className="hover:text-orange-600 transition">
-            Multi-Branch Admin
+          <Link href="/admin" className="hover:text-orange-600 transition">
+            {t("home.footerLink4")}
           </Link>
           <Link href="/my-history" className="hover:text-orange-600 transition">
-            Order Tracking
+            {t("home.footerLink5")}
           </Link>
         </div>
 
         <p className="text-[11px] text-slate-400 dark:text-slate-500 pt-4">
-          © {new Date().getFullYear()} QRCOS. Addis Ababa, Ethiopia. All rights reserved.
+          {t("home.footerCopy", { year: new Date().getFullYear() })}
         </p>
       </footer>
     </div>

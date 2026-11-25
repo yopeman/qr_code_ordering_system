@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { useI18n } from "./I18nProvider";
 
 interface TelegramChatInputProps {
   value: string;
@@ -19,9 +20,10 @@ export function TelegramChatInput({
   value,
   onChange,
   restaurantName,
-  placeholder = "e.g. @my_restaurant_orders",
-  helperText = "Leave blank if not using Telegram notifications.",
+  placeholder,
+  helperText,
 }: TelegramChatInputProps) {
+  const { t } = useI18n();
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
 
@@ -47,18 +49,18 @@ export function TelegramChatInput({
       if (res.ok && data.ok) {
         setStatus({
           ok: true,
-          message: data.message || "Test message sent successfully!",
+          message: data.message || t("tg.testSuccess"),
         });
       } else {
         setStatus({
           ok: false,
-          message: data.error || "Failed to send test message.",
+          message: data.error || t("tg.testFailed"),
         });
       }
     } catch (err: any) {
       setStatus({
         ok: false,
-        message: err?.message || "Network error while testing connection.",
+        message: err?.message || t("tg.networkError"),
       });
     } finally {
       setTesting(false);
@@ -68,21 +70,21 @@ export function TelegramChatInput({
   return (
     <div>
       <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-        Telegram Chat / Channel ID (Optional)
+        {t("tg.label")}
       </label>
       <div className="flex gap-2">
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("tg.placeholder")}
           className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
         />
         <button
           type="button"
           onClick={handleTest}
           disabled={!value.trim() || testing}
-          title="Send a test message to verify connection"
+          title={t("tg.testTitle")}
           className="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {testing ? (
@@ -90,7 +92,7 @@ export function TelegramChatInput({
           ) : (
             <Send className="w-3.5 h-3.5 text-orange-600" />
           )}
-          <span>{testing ? "Testing..." : "Test"}</span>
+          <span>{testing ? t("tg.testing") : t("tg.test")}</span>
         </button>
       </div>
 
@@ -111,7 +113,7 @@ export function TelegramChatInput({
         </div>
       )}
 
-      <p className="text-[10px] text-slate-400 mt-1">{helperText}</p>
+      <p className="text-[10px] text-slate-400 mt-1">{helperText ?? t("tg.helper")}</p>
     </div>
   );
 }

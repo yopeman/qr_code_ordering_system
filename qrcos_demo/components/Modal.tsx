@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { useI18n } from "./I18nProvider";
 
 interface ModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export function Modal({
   children,
   maxWidth = "max-w-xl",
 }: ModalProps) {
+  const { t } = useI18n();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function Modal({
           type="button"
           onClick={onClose}
           className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors shrink-0 touch-manipulation"
-          aria-label="Close modal"
+          aria-label={t("modal.close")}
         >
           <X className="h-5 w-5" />
         </button>

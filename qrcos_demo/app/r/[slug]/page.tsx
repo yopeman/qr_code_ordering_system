@@ -9,6 +9,7 @@ import { DishImageGallery } from "@/components/DishImageGallery";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
 import { TelegramChatInput } from "@/components/TelegramChatInput";
+import { useI18n } from "@/components/I18nProvider";
 import { checkRestaurantAccess, formatOrderTime, formatOrderDate } from "@/lib/utils";
 import {
   Store,
@@ -27,7 +28,6 @@ import {
   AlertCircle,
   Loader2,
   ExternalLink,
-  Upload,
   Image as ImageIcon,
   Tag,
 } from "lucide-react";
@@ -62,6 +62,7 @@ export default function RestaurantOwnerPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const { t } = useI18n();
 
   // Auth state
   const [authChecking, setAuthChecking] = useState(true);
@@ -78,7 +79,7 @@ export default function RestaurantOwnerPage({
 
   // Restaurant & Menu Data
   const [restaurant, setRestaurant] = useState<RestaurantProfile | null>(null);
-  const access = checkRestaurantAccess(restaurant?.status, restaurant?.expiredAt);
+  const access = checkRestaurantAccess(restaurant?.status, restaurant?.expiredAt, t);
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [loadingMenus, setLoadingMenus] = useState(false);
@@ -142,7 +143,6 @@ export default function RestaurantOwnerPage({
     setAuthChecking(true);
     setAuthError("");
     try {
-      // 1. Check if existing session cookie/token is valid for this slug
       const authRes = await fetch("/api/auth/restaurant");
       if (authRes.ok) {
         const authData = await authRes.json();
@@ -153,7 +153,6 @@ export default function RestaurantOwnerPage({
         }
       }
 
-      // 2. Otherwise check password setup status
       const checkRes = await fetch("/api/auth/restaurant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -167,7 +166,7 @@ export default function RestaurantOwnerPage({
       }
 
       if (checkData.status === "suspended") {
-        setAuthError("This restaurant account has been suspended by the platform administrator. Please contact support.");
+        setAuthError(t("owner.suspendedAuth"));
         return;
       }
 
@@ -181,7 +180,6 @@ export default function RestaurantOwnerPage({
 
   const loadRestaurantData = async () => {
     try {
-      // Fetch restaurant
       const restRes = await fetch(`/api/restaurants/${slug}`);
       if (restRes.ok) {
         const restData = await restRes.json();
@@ -208,7 +206,6 @@ export default function RestaurantOwnerPage({
         });
       }
 
-      // Fetch menus
       await loadMenus();
     } catch (err) {
       console.error(err);
@@ -245,17 +242,16 @@ export default function RestaurantOwnerPage({
     }
   };
 
-  // Auth: Setup Password (null password onboarding)
   const handleSetupPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
 
     if (!newPassword || newPassword.length < 4) {
-      setAuthError("Password must be at least 4 characters");
+      setAuthError(t("owner.pwdMinError"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setAuthError("Passwords do not match");
+      setAuthError(t("owner.pwdMismatch"));
       return;
     }
 
@@ -287,13 +283,12 @@ export default function RestaurantOwnerPage({
     }
   };
 
-  // Auth: Standard Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
 
     if (!loginPassword) {
-      setAuthError("Password is required");
+      setAuthError(t("owner.pwdRequired"));
       return;
     }
 
@@ -345,11 +340,11 @@ export default function RestaurantOwnerPage({
     setPwdMsg({ text: "", isError: false });
 
     if (!changeNewPwd || changeNewPwd.length < 4) {
-      setPwdMsg({ text: "New password must be at least 4 characters", isError: true });
+      setPwdMsg({ text: t("owner.pwdMinError"), isError: true });
       return;
     }
     if (changeNewPwd !== changeConfirmPwd) {
-      setPwdMsg({ text: "Passwords do not match", isError: true });
+      setPwdMsg({ text: t("owner.pwdMismatch"), isError: true });
       return;
     }
 
@@ -372,7 +367,7 @@ export default function RestaurantOwnerPage({
         return;
       }
 
-      setPwdMsg({ text: "Password updated successfully!", isError: false });
+      setPwdMsg({ text: t("owner.pwdUpdated"), isError: false });
       setTimeout(() => {
         setChangePwdOpen(false);
         setCurrentPwd("");
@@ -440,7 +435,6 @@ export default function RestaurantOwnerPage({
       return;
     }
 
-    // Clean details
     const parsedDetail = (menuFormData.details || [])
       .filter((d) => d.key.trim() && d.value.trim())
       .map((d) => ({ key: d.key.trim(), value: d.value.trim() }));
@@ -484,7 +478,7 @@ export default function RestaurantOwnerPage({
   };
 
   const handleDeleteMenu = async (item: MenuItem) => {
-    if (!confirm(`Delete "${item.name}" from your menu?`)) return;
+    if (!confirm(t("owner.confirmDeleteDish", { name: item.name }))) return;
 
     try {
       const res = await fetch(`/api/restaurants/${slug}/menus/${item._id}`, {
@@ -516,26 +510,22 @@ export default function RestaurantOwnerPage({
     }
   };
 
-  // Settings Save
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingSettings(true);
     setSettingsSuccess(false);
 
     try {
-      // Clean details
       const detail = (settingsFormData.details || [])
         .filter((d) => d.key.trim() && d.value.trim())
         .map((d) => ({ key: d.key.trim(), value: d.value.trim() }));
 
-      // Parse fees
       const config = (settingsFormData.fees || []).map((f) => ({
         feeName: f.feeName.trim(),
         type: f.type,
         amount: parseFloat(String(f.amount)) || 0,
       }));
 
-      // Owner cannot modify status or expiredAt per spec
       const payload = {
         name: settingsFormData.name,
         description: settingsFormData.description,
@@ -564,7 +554,6 @@ export default function RestaurantOwnerPage({
     }
   };
 
-  // Quick Kitchen status switcher
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -605,7 +594,7 @@ export default function RestaurantOwnerPage({
           </div>
 
           <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white">
-            Restaurant Owner Portal
+            {t("owner.portalTitle")}
           </h2>
           <p className="text-xs text-center font-mono text-orange-600 mt-1 mb-6">
             /r/{slug}
@@ -621,33 +610,33 @@ export default function RestaurantOwnerPage({
           {needsPasswordSetup ? (
             <form onSubmit={handleSetupPassword} className="space-y-4">
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
-                Welcome to your restaurant portal! Your account is currently unpassworded. Please establish a password to complete onboarding.
+                {t("owner.onboardingInfo")}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Create Owner Password
+                  {t("owner.createPwd")}
                 </label>
                 <input
                   type="password"
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Minimum 4 characters"
+                  placeholder={t("owner.minChars")}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Confirm Password
+                  {t("owner.confirmPwd")}
                 </label>
                 <input
                   type="password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm password"
+                  placeholder={t("owner.confirmPwdPlaceholder")}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -658,21 +647,21 @@ export default function RestaurantOwnerPage({
                 className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Set Password & Enter Dashboard
+                {t("owner.setPwdEnter")}
               </button>
             </form>
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Owner Password
+                  {t("owner.ownerPwd")}
                 </label>
                 <input
                   type="password"
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="Enter restaurant password"
+                  placeholder={t("owner.enterPwdPlaceholder")}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -683,7 +672,7 @@ export default function RestaurantOwnerPage({
                 className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Log In
+                {t("common.logIn")}
               </button>
             </form>
           )}
@@ -736,12 +725,12 @@ export default function RestaurantOwnerPage({
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
                   }`}
                 >
-                  {access.isExpired ? "Expired" : "Expires"}: {formatOrderDate(restaurant.expiredAt)}
+                  {access.isExpired ? t("common.expired") : t("common.expires")}: {formatOrderDate(restaurant.expiredAt)}
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              <span>Owner Dashboard</span>
+              <span>{t("owner.dashboard")}</span>
               <span>•</span>
               <a
                 href={`/m/${slug}?table=1`}
@@ -762,7 +751,7 @@ export default function RestaurantOwnerPage({
             className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 transition touch-manipulation"
           >
             <QrCode className="w-4 h-4" />
-            <span>Table QR Stand</span>
+            <span>{t("owner.tableQrStand")}</span>
           </button>
 
           <button
@@ -771,7 +760,7 @@ export default function RestaurantOwnerPage({
             className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition touch-manipulation"
           >
             <KeyRound className="w-4 h-4" />
-            <span>Password</span>
+            <span>{t("owner.passwordBtn")}</span>
           </button>
 
           <button
@@ -780,7 +769,7 @@ export default function RestaurantOwnerPage({
             className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 transition touch-manipulation"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
+            <span>{t("common.signOut")}</span>
           </button>
         </div>
       </div>
@@ -800,13 +789,13 @@ export default function RestaurantOwnerPage({
           <div className="space-y-1">
             <h3 className="text-sm font-bold">
               {access.reason === "suspended"
-                ? "Restaurant Account Suspended"
+                ? t("owner.bannerSuspended")
                 : access.reason === "expired"
-                ? "Subscription Plan Expired"
-                : "Restaurant Currently Inactive"}
+                ? t("owner.bannerExpired")
+                : t("owner.bannerInactive")}
             </h3>
             <p className="text-xs opacity-90 leading-relaxed">
-              {access.message} Customers scanning table QR codes cannot place orders. Please contact platform administration to renew your subscription or restore service.
+              {access.message} {t("owner.bannerSuffix")}
             </p>
           </div>
         </div>
@@ -824,7 +813,7 @@ export default function RestaurantOwnerPage({
           }`}
         >
           <UtensilsCrossed className="w-4 h-4" />
-          Menu Management ({menus.length})
+          {t("owner.tabMenu", { count: menus.length })}
         </button>
 
         <button
@@ -840,7 +829,7 @@ export default function RestaurantOwnerPage({
           }`}
         >
           <ChefHat className="w-4 h-4" />
-          Live Orders ({orders.length})
+          {t("owner.tabOrders", { count: orders.length })}
         </button>
 
         <button
@@ -853,7 +842,7 @@ export default function RestaurantOwnerPage({
           }`}
         >
           <Settings className="w-4 h-4" />
-          Restaurant Settings
+          {t("owner.tabSettings")}
         </button>
       </div>
 
@@ -874,7 +863,7 @@ export default function RestaurantOwnerPage({
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
                   }`}
                 >
-                  {cat}
+                  {cat === "All" ? t("common.all") : cat}
                 </button>
               ))}
             </div>
@@ -885,7 +874,7 @@ export default function RestaurantOwnerPage({
               className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-[0.98] text-white font-semibold text-xs shadow-md transition touch-manipulation"
             >
               <Plus className="w-4 h-4" />
-              Add Dish
+              {t("owner.addDish")}
             </button>
           </div>
 
@@ -895,7 +884,7 @@ export default function RestaurantOwnerPage({
             </div>
           ) : filteredMenus.length === 0 ? (
             <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8">
-              <p className="text-slate-500 text-sm">No dishes found in this category.</p>
+              <p className="text-slate-500 text-sm">{t("owner.noDishesInCat")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -909,7 +898,7 @@ export default function RestaurantOwnerPage({
                       <div
                         onClick={() => setPreviewDish(item)}
                         className="h-44 w-full overflow-hidden bg-slate-100 relative cursor-pointer group/img"
-                        title="Click to preview photos"
+                        title={t("owner.previewPhotosTitle")}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -924,18 +913,18 @@ export default function RestaurantOwnerPage({
                               : "bg-slate-900/80 text-slate-300 border border-slate-700"
                           }`}
                         >
-                          {item.visibility}
+                          {t(`status.${item.visibility}`)}
                         </span>
                         {item.imgUrls.length > 1 && (
                           <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1 shadow">
                             <ImageIcon className="w-2.5 h-2.5" />
-                            {item.imgUrls.length} photos
+                            {t("owner.photosCount", { count: item.imgUrls.length })}
                           </span>
                         )}
                       </div>
                     ) : (
                       <div className="h-32 w-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-xs">
-                        No Photo
+                        {t("owner.noPhoto")}
                       </div>
                     )}
 
@@ -945,7 +934,7 @@ export default function RestaurantOwnerPage({
                           {item.category}
                         </span>
                         <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                          {Number(item.price).toFixed(2)} ETB
+                          {Number(item.price).toFixed(2)} {t("common.etb")}
                         </span>
                       </div>
 
@@ -954,7 +943,7 @@ export default function RestaurantOwnerPage({
                       </h3>
 
                       <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
-                        {item.description || "No description provided."}
+                        {item.description || t("owner.noDesc")}
                       </p>
 
                       {item.detail?.length > 0 && (
@@ -981,12 +970,12 @@ export default function RestaurantOwnerPage({
                       {item.visibility === "public" ? (
                         <>
                           <Eye className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Public</span>
+                          <span>{t("status.public")}</span>
                         </>
                       ) : (
                         <>
                           <EyeOff className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Private</span>
+                          <span>{t("status.private")}</span>
                         </>
                       )}
                     </button>
@@ -996,7 +985,7 @@ export default function RestaurantOwnerPage({
                         type="button"
                         onClick={() => openEditMenuModal(item)}
                         className="p-2 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 touch-manipulation inline-flex items-center justify-center"
-                        title="Edit Dish"
+                        title={t("owner.editDish")}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -1004,7 +993,7 @@ export default function RestaurantOwnerPage({
                         type="button"
                         onClick={() => handleDeleteMenu(item)}
                         className="p-2 sm:p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 touch-manipulation inline-flex items-center justify-center"
-                        title="Delete Dish"
+                        title={t("owner.deleteDish")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1022,7 +1011,7 @@ export default function RestaurantOwnerPage({
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Kitchen Orders ({orders.length})
+              {t("owner.kitchenOrders", { count: orders.length })}
             </h2>
             <a
               href={`/o/${slug}`}
@@ -1030,11 +1019,10 @@ export default function RestaurantOwnerPage({
               rel="noreferrer"
               className="flex items-center gap-1.5 text-xs font-semibold text-orange-600 hover:underline"
             >
-              Open Full Kitchen Display Screen <ExternalLink className="w-3.5 h-3.5" />
+              {t("owner.openFullKitchen")} <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
 
-          {/* Quick status filter pills on mobile & desktop */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
             {(["all", "pending", "preparing", "completed"] as const).map((st) => {
               const count =
@@ -1052,7 +1040,7 @@ export default function RestaurantOwnerPage({
                       : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
                   }`}
                 >
-                  <span className="capitalize">{st === "all" ? "All Orders" : st}</span>
+                  <span>{st === "all" ? t("kitchen.allOrders") : t(`status.${st}`)}</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/20 text-white font-mono">
                     {count}
                   </span>
@@ -1066,7 +1054,7 @@ export default function RestaurantOwnerPage({
               <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
             </div>
           ) : orders.length === 0 ? (
-            <p className="text-center py-16 text-slate-500 text-sm">No orders recorded yet.</p>
+            <p className="text-center py-16 text-slate-500 text-sm">{t("owner.noOrdersYet")}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {orders
@@ -1079,7 +1067,7 @@ export default function RestaurantOwnerPage({
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-extrabold text-base text-slate-900 dark:text-white">
-                        Table {ord.table}
+                        {t("common.tableWithNumber", { table: ord.table })}
                       </span>
                       <p className="text-xs text-slate-400">
                         {ord.customerName} • {formatOrderTime(ord.orderedAt, { includeZone: true })}
@@ -1095,7 +1083,7 @@ export default function RestaurantOwnerPage({
                           : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
                       }`}
                     >
-                      {ord.status}
+                      {ord.status === "completed" ? t("status.completed") : ord.status === "preparing" ? t("status.preparing") : t("status.pending")}
                     </span>
                   </div>
 
@@ -1105,23 +1093,22 @@ export default function RestaurantOwnerPage({
                         <span>
                           {it.name} <span className="text-slate-400">x{it.quantity}</span>
                         </span>
-                        <span className="font-mono">{Number(it.subtotalPrice).toFixed(2)} ETB</span>
+                        <span className="font-mono">{Number(it.subtotalPrice).toFixed(2)} {t("common.etb")}</span>
                       </div>
                     ))}
                   </div>
 
                   {ord.notes && (
                     <p className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 p-2 rounded-lg italic">
-                      Note: &quot;{ord.notes}&quot;
+                      {t("common.note")}: &quot;{ord.notes}&quot;
                     </p>
                   )}
 
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between font-bold text-xs">
-                    <span>Total</span>
-                    <span className="font-mono text-orange-600">{Number(ord.totalPrice).toFixed(2)} ETB</span>
+                    <span>{t("common.total")}</span>
+                    <span className="font-mono text-orange-600">{Number(ord.totalPrice).toFixed(2)} {t("common.etb")}</span>
                   </div>
 
-                  {/* Status buttons */}
                   <div className="grid grid-cols-3 gap-1.5 pt-1">
                     <button
                       type="button"
@@ -1132,7 +1119,7 @@ export default function RestaurantOwnerPage({
                           : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100"
                       }`}
                     >
-                      Pending
+                      {t("status.pending")}
                     </button>
                     <button
                       type="button"
@@ -1143,7 +1130,7 @@ export default function RestaurantOwnerPage({
                           : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100"
                       }`}
                     >
-                      Preparing
+                      {t("status.preparing")}
                     </button>
                     <button
                       type="button"
@@ -1154,7 +1141,7 @@ export default function RestaurantOwnerPage({
                           : "border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100"
                       }`}
                     >
-                      Completed
+                      {t("status.completed")}
                     </button>
                   </div>
                 </div>
@@ -1169,24 +1156,24 @@ export default function RestaurantOwnerPage({
         <div className="max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Restaurant Profile & Charges
+              {t("owner.profileChargesTitle")}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Update branding, customer details, and fee structures. Note: Account status and subscription expiry can only be managed by Super Admins.
+              {t("owner.profileChargesDesc")}
             </p>
           </div>
 
           {settingsSuccess && (
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Settings updated successfully!</span>
+              <span>{t("owner.settingsSaved")}</span>
             </div>
           )}
 
           {/* Account Status & Subscription Expiry Card */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Operational Status</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t("owner.operationalStatus")}</span>
               <span
                 className={`text-[11px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
                   access.badgeVariant === "active"
@@ -1202,21 +1189,21 @@ export default function RestaurantOwnerPage({
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Subscription Expiry</span>
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t("owner.subscriptionExpiry")}</span>
               <span className="text-xs font-mono font-medium text-slate-800 dark:text-slate-200">
-                {restaurant?.expiredAt ? formatOrderDate(restaurant.expiredAt) : "No Expiry (Lifetime)"}
-                {access.isExpired && " (Expired)"}
+                {restaurant?.expiredAt ? formatOrderDate(restaurant.expiredAt) : t("common.noExpiry")}
+                {access.isExpired && ` (${t("common.expired")})`}
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
-              * Status and expiry are managed by platform administrators.
+              {t("owner.managedByAdmin")}
             </p>
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Restaurant Display Name
+                {t("owner.displayName")}
               </label>
               <input
                 type="text"
@@ -1229,7 +1216,7 @@ export default function RestaurantOwnerPage({
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Description / Culinary Story
+                {t("owner.culinaryStory")}
               </label>
               <textarea
                 rows={3}
@@ -1239,29 +1226,27 @@ export default function RestaurantOwnerPage({
               />
             </div>
 
-            {/* Logo Upload with Cloudinary Integration */}
             <LogoUpload
               value={settingsFormData.logoUrl}
               onChange={(url) => setSettingsFormData((prev) => ({ ...prev, logoUrl: url }))}
               folder="qrcos/restaurants"
-              label="Restaurant Logo (Cloudinary Upload)"
+              label={t("owner.logoUploadLabel")}
             />
 
             <TelegramChatInput
               value={settingsFormData.telegramChat}
               onChange={(val) => setSettingsFormData({ ...settingsFormData, telegramChat: val })}
               restaurantName={settingsFormData.name || restaurant?.name}
-              placeholder="e.g. @my_restaurant_orders (optional)"
-              helperText="Leave blank if you do not want kitchen ticket alerts sent to Telegram."
+              placeholder={t("owner.tgPlaceholder")}
+              helperText={t("owner.tgHelper")}
             />
 
-            {/* Interactive Contact & Amenities Key-Value Form */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <KeyValueBuilder
-                label="Contact & Amenities"
-                description="Interactive key-value specifications displayed to diners (e.g. WiFi pass, telephone, opening hours)."
-                keyPlaceholder="Key (e.g. WiFi)"
-                valuePlaceholder="Value (e.g. GuestPass123)"
+                label={t("owner.contactAmenities")}
+                description={t("owner.contactAmenitiesDesc")}
+                keyPlaceholder={t("owner.kvKeyPlaceholder")}
+                valuePlaceholder={t("owner.kvValPlaceholder")}
                 items={settingsFormData.details}
                 onChange={(details) => setSettingsFormData((prev) => ({ ...prev, details }))}
                 presets={[
@@ -1275,7 +1260,6 @@ export default function RestaurantOwnerPage({
               />
             </div>
 
-            {/* Interactive Fee Config Form */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <FeeConfigBuilder
                 fees={settingsFormData.fees}
@@ -1289,7 +1273,7 @@ export default function RestaurantOwnerPage({
                 disabled={savingSettings}
                 className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition disabled:opacity-50"
               >
-                {savingSettings ? "Saving Settings..." : "Save Restaurant Settings"}
+                {savingSettings ? t("owner.savingSettings") : t("owner.saveSettings")}
               </button>
             </div>
           </form>
@@ -1300,7 +1284,7 @@ export default function RestaurantOwnerPage({
       <Modal
         isOpen={menuModalOpen}
         onClose={() => setMenuModalOpen(false)}
-        title={editingMenu ? `Edit Dish: ${editingMenu.name}` : "Add New Dish to Menu"}
+        title={editingMenu ? t("owner.editDishTitle", { name: editingMenu.name }) : t("owner.addDishTitle")}
         maxWidth="max-w-xl"
       >
         <form onSubmit={handleSaveMenu} className="space-y-4">
@@ -1312,14 +1296,14 @@ export default function RestaurantOwnerPage({
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Dish Name *
+              {t("owner.dishNameLabel")}
             </label>
             <input
               type="text"
               required
               value={menuFormData.name}
               onChange={(e) => setMenuFormData({ ...menuFormData, name: e.target.value })}
-              placeholder="e.g. Special Tibs / ስፔሻል ጥብስ"
+              placeholder={t("owner.dishNamePlaceholder")}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
@@ -1328,7 +1312,7 @@ export default function RestaurantOwnerPage({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                  Category *
+                  {t("owner.categoryLabel")}
                 </label>
                 {existingCategories.length > 0 && (
                   <button
@@ -1353,11 +1337,11 @@ export default function RestaurantOwnerPage({
                   >
                     {isNewCategory ? (
                       <>
-                        <Tag className="w-3 h-3" /> Select Existing
+                        <Tag className="w-3 h-3" /> {t("owner.selectExisting")}
                       </>
                     ) : (
                       <>
-                        <Plus className="w-3 h-3" /> + New Category
+                        <Plus className="w-3 h-3" /> {t("owner.newCategory")}
                       </>
                     )}
                   </button>
@@ -1380,7 +1364,7 @@ export default function RestaurantOwnerPage({
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="" disabled>
-                      -- Select Existing Category --
+                      {t("owner.selectCategoryOpt")}
                     </option>
                     {existingCategories.map((cat) => (
                       <option key={cat} value={cat}>
@@ -1388,7 +1372,7 @@ export default function RestaurantOwnerPage({
                       </option>
                     ))}
                     <option value="__NEW__" className="text-orange-600 font-semibold">
-                      + Create New Category...
+                      {t("owner.createNewCategoryOpt")}
                     </option>
                   </select>
                 </div>
@@ -1402,13 +1386,13 @@ export default function RestaurantOwnerPage({
                     onChange={(e) =>
                       setMenuFormData({ ...menuFormData, category: e.target.value })
                     }
-                    placeholder="e.g. Traditional, Tibs, Fasting / Veg, Drinks"
+                    placeholder={t("owner.categoryPlaceholder")}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                   {existingCategories.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                       <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                        Or pick existing:
+                        {t("owner.orPickExisting")}
                       </span>
                       {existingCategories.map((cat) => (
                         <button
@@ -1431,7 +1415,7 @@ export default function RestaurantOwnerPage({
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Price (ETB) *
+                {t("owner.priceLabel")}
               </label>
               <input
                 type="number"
@@ -1447,46 +1431,44 @@ export default function RestaurantOwnerPage({
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Description & Ingredients
+              {t("owner.descIngredients")}
             </label>
             <textarea
               rows={2}
               value={menuFormData.description}
               onChange={(e) => setMenuFormData({ ...menuFormData, description: e.target.value })}
-              placeholder="Ingredients, niter kibbeh, spicy berbere, preparation notes..."
+              placeholder={t("owner.descIngredientsPlaceholder")}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
-          {/* Multiple Dish Photos with Cloudinary Upload */}
           <MultiImageUpload
             urls={menuFormData.imgUrls}
             onChange={(urls) => setMenuFormData((prev) => ({ ...prev, imgUrls: urls }))}
             folder="qrcos/dishes"
-            label="Dish Photos"
+            label={t("multiImg.defaultLabel")}
           />
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Visibility
+              {t("owner.visibilityLabel")}
             </label>
             <select
               value={menuFormData.visibility}
               onChange={(e: any) => setMenuFormData({ ...menuFormData, visibility: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              <option value="public">Public (Visible to diners)</option>
-              <option value="private">Private (Hidden from menu)</option>
+              <option value="public">{t("owner.visPublicOpt")}</option>
+              <option value="private">{t("owner.visPrivateOpt")}</option>
             </select>
           </div>
 
-          {/* Interactive Dietary & Menu Details Key-Value Form */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <KeyValueBuilder
-              label="Dietary & Menu Details"
-              description="Nutritional info, allergens, spiciness, or dietary indicators."
-              keyPlaceholder="Key (e.g. Calories)"
-              valuePlaceholder="Value (e.g. 450 kcal)"
+              label={t("owner.dietaryLabel")}
+              description={t("owner.dietaryDesc")}
+              keyPlaceholder={t("owner.dietaryKeyPlaceholder")}
+              valuePlaceholder={t("owner.dietaryValPlaceholder")}
               items={menuFormData.details}
               onChange={(details) => setMenuFormData((prev) => ({ ...prev, details }))}
               presets={[
@@ -1505,14 +1487,14 @@ export default function RestaurantOwnerPage({
               onClick={() => setMenuModalOpen(false)}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={savingMenu}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow transition disabled:opacity-50"
             >
-              {savingMenu ? "Saving..." : editingMenu ? "Update Dish" : "Add Dish"}
+              {savingMenu ? t("common.saving") : editingMenu ? t("owner.updateDish") : t("owner.addDish")}
             </button>
           </div>
         </form>
@@ -1522,7 +1504,7 @@ export default function RestaurantOwnerPage({
       <Modal
         isOpen={changePwdOpen}
         onClose={() => setChangePwdOpen(false)}
-        title="Change Owner Password"
+        title={t("owner.changePwdTitle")}
       >
         <form onSubmit={handleChangePassword} className="space-y-4">
           {pwdMsg.text && (
@@ -1540,7 +1522,7 @@ export default function RestaurantOwnerPage({
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Current Password
+              {t("owner.currentPwd")}
             </label>
             <input
               type="password"
@@ -1553,7 +1535,7 @@ export default function RestaurantOwnerPage({
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              New Password
+              {t("owner.newPwd")}
             </label>
             <input
               type="password"
@@ -1566,7 +1548,7 @@ export default function RestaurantOwnerPage({
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-              Confirm New Password
+              {t("owner.confirmNewPwd")}
             </label>
             <input
               type="password"
@@ -1583,14 +1565,14 @@ export default function RestaurantOwnerPage({
               onClick={() => setChangePwdOpen(false)}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               disabled={pwdLoading}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow transition disabled:opacity-50"
             >
-              {pwdLoading ? "Saving..." : "Update Password"}
+              {pwdLoading ? t("common.saving") : t("owner.updatePwdBtn")}
             </button>
           </div>
         </form>
@@ -1615,18 +1597,18 @@ export default function RestaurantOwnerPage({
                 {previewDish.category}
               </span>
               <span className="text-lg font-extrabold font-mono text-slate-900 dark:text-white">
-                {Number(previewDish.price).toFixed(2)} ETB
+                {Number(previewDish.price).toFixed(2)} {t("common.etb")}
               </span>
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              {previewDish.description || "No description provided."}
+              {previewDish.description || t("owner.noDesc")}
             </p>
 
             {previewDish.detail?.length > 0 && (
               <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <h5 className="text-[11px] font-bold uppercase text-slate-400">
-                  Dish Information
+                  {t("menu.dishInfo")}
                 </h5>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {previewDish.detail.map((d, i) => (
@@ -1654,7 +1636,7 @@ export default function RestaurantOwnerPage({
                 }}
                 className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs transition"
               >
-                Edit Dish
+                {t("owner.editDish")}
               </button>
             </div>
           </div>

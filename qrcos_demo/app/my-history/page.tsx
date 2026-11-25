@@ -3,17 +3,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatOrderDateTime } from "@/lib/utils";
+import { useI18n } from "@/components/I18nProvider";
 import {
   History,
   Clock,
   CheckCircle2,
   ChefHat,
   ShoppingBag,
-  ArrowRight,
   Trash2,
   ExternalLink,
   Loader2,
-  RefreshCw,
   Edit2,
 } from "lucide-react";
 
@@ -40,6 +39,7 @@ interface OrderLiveState {
 }
 
 export default function MyHistoryPage() {
+  const { t } = useI18n();
   const [savedRefs, setSavedRefs] = useState<SavedOrderRef[]>([]);
   const [liveOrders, setLiveOrders] = useState<Record<string, OrderLiveState>>({});
   const [loading, setLoading] = useState(true);
@@ -94,16 +94,8 @@ export default function MyHistoryPage() {
     };
   }, [savedRefs]);
 
-  const handleClearHistory = () => {
-    if (confirm("Clear your local order history?")) {
-      localStorage.removeItem("qrcos_customer_orders");
-      setSavedRefs([]);
-      setLiveOrders({});
-    }
-  };
-
   const handleCancelOrder = async (orderId: string) => {
-    if (!confirm("Are you sure you want to cancel and delete this pending order?")) {
+    if (!confirm(t("menu.confirmCancelOrder"))) {
       return;
     }
 
@@ -114,7 +106,7 @@ export default function MyHistoryPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Failed to cancel order");
+        alert(data.error || t("menu.failedCancelOrder"));
         return;
       }
 
@@ -127,7 +119,7 @@ export default function MyHistoryPage() {
         return next;
       });
     } catch (err: any) {
-      alert(err.message || "Failed to cancel order");
+      alert(err.message || t("menu.failedCancelOrder"));
     } finally {
       setCancellingId(null);
     }
@@ -144,28 +136,17 @@ export default function MyHistoryPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black text-slate-900 dark:text-white">
-                My Order History
+                {t("history.title")}
               </h1>
               <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                Saved
+                {t("history.saved")}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Live 1s status polling tracks your meal from kitchen prep to table delivery
+              {t("history.subtitle")}
             </p>
           </div>
         </div>
-
-        {/* {savedRefs.length > 0 && (
-          <button
-            type="button"
-            onClick={handleClearHistory}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition self-start sm:self-auto touch-manipulation"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear History
-          </button>
-        )} */}
       </div>
 
       {loading ? (
@@ -179,19 +160,18 @@ export default function MyHistoryPage() {
           </div>
           <div>
             <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-              No Orders Found Yet
+              {t("history.noOrdersTitle")}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
-              When you scan a restaurant QR code and place an order, your tickets will appear here with live kitchen status updates.
+              {t("history.noOrdersDesc")}
             </p>
           </div>
           <div className="pt-2">
             <Link
-              href="#"
-              onClick={() => window.history.back()}
+              href="/"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition"
             >
-              Try Ordering
+              {t("history.tryOrdering")}
             </Link>
           </div>
         </div>
@@ -214,11 +194,11 @@ export default function MyHistoryPage() {
                         {live?.restaurant?.name || ref.restaurantName}
                       </h3>
                       <span className="font-mono text-xs font-bold text-orange-600 bg-orange-50 dark:bg-orange-950/50 px-2 py-0.5 rounded-md">
-                        Table {live?.table || ref.table}
+                        {t("common.tableWithNumber", { table: live?.table || ref.table })}
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Ordered on {formatOrderDateTime(ref.orderedAt, { includeZone: true })}
+                      {t("history.orderedOn", { date: formatOrderDateTime(ref.orderedAt, { includeZone: true }) })}
                     </p>
                   </div>
 
@@ -236,17 +216,17 @@ export default function MyHistoryPage() {
                       {currentStatus === "completed" ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                          <span>Ready / Served</span>
+                          <span>{t("history.readyServed")}</span>
                         </>
                       ) : currentStatus === "preparing" ? (
                         <>
                           <ChefHat className="w-4 h-4 text-amber-500 animate-bounce" />
-                          <span>Cooking in Kitchen</span>
+                          <span>{t("history.cookingKitchen")}</span>
                         </>
                       ) : (
                         <>
                           <Clock className="w-4 h-4 text-blue-500 animate-spin" />
-                          <span>Order Received</span>
+                          <span>{t("history.orderReceived")}</span>
                         </>
                       )}
                     </span>
@@ -264,7 +244,7 @@ export default function MyHistoryPage() {
                         : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                     }`}
                   >
-                    1. Received
+                    {t("history.step1")}
                   </div>
                   <div
                     className={`py-1.5 rounded-lg transition ${
@@ -274,7 +254,7 @@ export default function MyHistoryPage() {
                         : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                     }`}
                   >
-                    2. Preparing
+                    {t("history.step2")}
                   </div>
                   <div
                     className={`py-1.5 rounded-lg transition ${
@@ -283,7 +263,7 @@ export default function MyHistoryPage() {
                         : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                     }`}
                   >
-                    3. Served
+                    {t("history.step3")}
                   </div>
                 </div>
 
@@ -295,7 +275,7 @@ export default function MyHistoryPage() {
                         <span>
                           {item.name} <span className="text-slate-400">x{item.quantity}</span>
                         </span>
-                        <span className="font-mono">{Number(item.subtotalPrice).toFixed(2)} ETB</span>
+                        <span className="font-mono">{Number(item.subtotalPrice).toFixed(2)} {t("common.etb")}</span>
                       </div>
                     ))}
                   </div>
@@ -304,9 +284,9 @@ export default function MyHistoryPage() {
                 {/* Total & Action */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                   <div className="text-xs">
-                    <span className="text-slate-400 mr-2">Grand Total:</span>
+                    <span className="text-slate-400 mr-2">{t("menu.grandTotal")}</span>
                     <span className="font-extrabold text-sm font-mono text-orange-600">
-                      {Number(live?.totalPrice || ref.totalPrice).toFixed(2)} ETB
+                      {Number(live?.totalPrice || ref.totalPrice).toFixed(2)} {t("common.etb")}
                     </span>
                   </div>
 
@@ -318,7 +298,7 @@ export default function MyHistoryPage() {
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-slate-700 dark:text-slate-200 hover:text-orange-600 text-xs font-semibold transition"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
-                          <span>Edit</span>
+                          <span>{t("common.edit")}</span>
                         </Link>
                         <button
                           type="button"
@@ -331,7 +311,7 @@ export default function MyHistoryPage() {
                           ) : (
                             <Trash2 className="w-3.5 h-3.5" />
                           )}
-                          <span>Cancel</span>
+                          <span>{t("common.cancel")}</span>
                         </button>
                       </>
                     )}
@@ -340,7 +320,7 @@ export default function MyHistoryPage() {
                       href={`/m/${ref.restaurantSlug}?table=${ref.table}`}
                       className="flex items-center gap-1 text-xs font-semibold text-orange-600 hover:underline"
                     >
-                      Reorder from Menu <ExternalLink className="w-3.5 h-3.5" />
+                      {t("history.reorder")} <ExternalLink className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
