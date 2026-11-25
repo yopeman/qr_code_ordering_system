@@ -8,6 +8,7 @@ import { MultiImageUpload } from "@/components/MultiImageUpload";
 import { DishImageGallery } from "@/components/DishImageGallery";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
+import { TelegramChatInput } from "@/components/TelegramChatInput";
 import { checkRestaurantAccess, formatOrderTime, formatOrderDate } from "@/lib/utils";
 import {
   Store,
@@ -1246,21 +1247,13 @@ export default function RestaurantOwnerPage({
               label="Restaurant Logo (Cloudinary Upload)"
             />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Telegram Chat / Channel ID (Optional)
-              </label>
-              <input
-                type="text"
-                value={settingsFormData.telegramChat}
-                onChange={(e) => setSettingsFormData({ ...settingsFormData, telegramChat: e.target.value })}
-                placeholder="e.g. @my_restaurant_orders (optional)"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <p className="text-[10px] text-slate-400 mt-1">
-                Leave blank if you do not want kitchen ticket alerts sent to Telegram.
-              </p>
-            </div>
+            <TelegramChatInput
+              value={settingsFormData.telegramChat}
+              onChange={(val) => setSettingsFormData({ ...settingsFormData, telegramChat: val })}
+              restaurantName={settingsFormData.name || restaurant?.name}
+              placeholder="e.g. @my_restaurant_orders (optional)"
+              helperText="Leave blank if you do not want kitchen ticket alerts sent to Telegram."
+            />
 
             {/* Interactive Contact & Amenities Key-Value Form */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">

@@ -6,6 +6,7 @@ import { QRCodeModal } from "@/components/QRCodeModal";
 import { LogoUpload } from "@/components/LogoUpload";
 import { FeeConfigBuilder, FeeItem } from "@/components/FeeConfigBuilder";
 import { KeyValueBuilder, KeyValueItem } from "@/components/KeyValueBuilder";
+import { TelegramChatInput } from "@/components/TelegramChatInput";
 import { slugify, formatOrderTime, formatOrderDate } from "@/lib/utils";
 import {
   Shield,
@@ -1137,21 +1138,13 @@ export default function AdminPage() {
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Telegram Chat / Channel ID (Optional)
-              </label>
-              <input
-                type="text"
-                value={formData.telegramChat}
-                onChange={(e) => setFormData({ ...formData, telegramChat: e.target.value })}
-                placeholder="e.g. @my_restaurant_orders"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <p className="text-[10px] text-slate-400 mt-1">
-                No default channel. Leave blank if not using Telegram notifications.
-              </p>
-            </div>
+            <TelegramChatInput
+              value={formData.telegramChat}
+              onChange={(val) => setFormData({ ...formData, telegramChat: val })}
+              restaurantName={formData.name}
+              placeholder="e.g. @my_restaurant_orders"
+              helperText="No default channel. Leave blank if not using Telegram notifications."
+            />
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">

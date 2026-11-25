@@ -166,3 +166,57 @@ export async function answerTelegramCallbackQuery(callbackQueryId: string, text?
     console.error("Failed to answer callback query:", err);
   }
 }
+
+/**
+ * Sends a test message to verify that the Telegram bot can reach the given chat/channel ID.
+ */
+export async function sendTelegramTestMessage(
+  chatId: string,
+  restaurantName?: string
+): Promise<{ ok: boolean; error?: string }> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const channel = chatId?.trim();
+
+  if (!token) {
+    return { ok: false, error: "TELEGRAM_BOT_TOKEN is not configured on the server." };
+  }
+  if (!channel) {
+    return { ok: false, error: "Please enter a Telegram Chat or Channel ID." };
+  }
+
+  const lines = [
+    "✅ <b>Telegram Connection Test</b>",
+    restaurantName?.trim()
+      ? `🏠 <b>Restaurant:</b> ${escapeHtml(restaurantName.trim())}`
+      : "",
+    "Your Telegram bot is connected and ready to receive kitchen order notifications.",
+  ].filter(Boolean);
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: channel,
+        text: lines.join("\n"),
+        parse_mode: "HTML",
+      }),
+      cache: "no-store",
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.ok) {
+      return {
+        ok: false,
+        error: data.description || "Failed to send test message to Telegram.",
+      };
+    }
+
+    return { ok: true };
+  } catch (err: any) {
+    return {
+      ok: false,
+      error: err?.message || "Network error while contacting Telegram API.",
+    };
+  }
+}
