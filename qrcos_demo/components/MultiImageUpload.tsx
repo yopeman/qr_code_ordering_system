@@ -78,13 +78,13 @@ export function MultiImageUpload({
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Failed to upload images");
+        throw new Error(data.error || t("err.failedUploadImages"));
       }
 
       const newUrls: string[] = data.urls || (data.url ? [data.url] : []);
       onChange([...urls, ...newUrls]);
     } catch (err: any) {
-      setError(err.message || "Upload failed");
+      setError(err.message || t("err.failedUploadImages"));
     } finally {
       setUploading(false);
       setUploadProgress("");

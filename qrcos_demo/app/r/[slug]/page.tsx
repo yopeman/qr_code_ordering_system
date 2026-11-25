@@ -161,7 +161,7 @@ export default function RestaurantOwnerPage({
       const checkData = await checkRes.json();
 
       if (!checkRes.ok) {
-        setAuthError(checkData.error || "Restaurant not found");
+        setAuthError(checkData.error || t("err.restaurantNotFound"));
         return;
       }
 
@@ -172,7 +172,7 @@ export default function RestaurantOwnerPage({
 
       setNeedsPasswordSetup(Boolean(checkData.needsPasswordSetup));
     } catch (err: any) {
-      setAuthError(err.message || "Authentication error");
+      setAuthError(err.message || t("err.authError"));
     } finally {
       setAuthChecking(false);
     }
@@ -269,7 +269,7 @@ export default function RestaurantOwnerPage({
       const data = await res.json();
 
       if (!res.ok) {
-        setAuthError(data.error || "Failed to set up password");
+        setAuthError(data.error || t("err.failedSetupPwd"));
         return;
       }
 
@@ -277,7 +277,7 @@ export default function RestaurantOwnerPage({
       setIsOwnerAuth(true);
       await loadRestaurantData();
     } catch (err: any) {
-      setAuthError(err.message || "Setup failed");
+      setAuthError(err.message || t("err.setupFailed"));
     } finally {
       setAuthLoading(false);
     }
@@ -310,7 +310,7 @@ export default function RestaurantOwnerPage({
           setNeedsPasswordSetup(true);
           return;
         }
-        setAuthError(data.error || "Invalid password");
+        setAuthError(data.error || t("err.invalidPassword"));
         return;
       }
 
@@ -318,7 +318,7 @@ export default function RestaurantOwnerPage({
       setIsOwnerAuth(true);
       await loadRestaurantData();
     } catch (err: any) {
-      setAuthError(err.message || "Login failed");
+      setAuthError(err.message || t("err.loginFailed"));
     } finally {
       setAuthLoading(false);
     }
@@ -363,7 +363,7 @@ export default function RestaurantOwnerPage({
       const data = await res.json();
 
       if (!res.ok) {
-        setPwdMsg({ text: data.error || "Failed to update password", isError: true });
+        setPwdMsg({ text: data.error || t("err.failedUpdatePwd"), isError: true });
         return;
       }
 
@@ -376,7 +376,7 @@ export default function RestaurantOwnerPage({
         setPwdMsg({ text: "", isError: false });
       }, 1500);
     } catch (err: any) {
-      setPwdMsg({ text: err.message || "Failed to change password", isError: true });
+      setPwdMsg({ text: err.message || t("err.failedChangePwd"), isError: true });
     } finally {
       setPwdLoading(false);
     }
@@ -431,7 +431,7 @@ export default function RestaurantOwnerPage({
     setMenuError("");
 
     if (!menuFormData.name.trim() || !menuFormData.category.trim() || !menuFormData.price) {
-      setMenuError("Category, Name, and Price are required");
+      setMenuError(t("err.menuFieldsRequired"));
       return;
     }
 
@@ -464,14 +464,14 @@ export default function RestaurantOwnerPage({
 
       if (!res.ok) {
         const data = await res.json();
-        setMenuError(data.error || "Failed to save menu");
+        setMenuError(data.error || t("err.failedSaveMenu"));
         return;
       }
 
       setMenuModalOpen(false);
       loadMenus();
     } catch (err: any) {
-      setMenuError(err.message || "Failed to save menu");
+      setMenuError(err.message || t("err.failedSaveMenu"));
     } finally {
       setSavingMenu(false);
     }
@@ -1250,12 +1250,12 @@ export default function RestaurantOwnerPage({
                 items={settingsFormData.details}
                 onChange={(details) => setSettingsFormData((prev) => ({ ...prev, details }))}
                 presets={[
-                  { key: "Phone", label: "Phone", defaultValue: "+251 9" },
-                  { key: "Location", label: "Location", defaultValue: "Bole, Addis Ababa" },
-                  { key: "Hours", label: "Hours", defaultValue: "08:00 AM - 10:00 PM" },
-                  { key: "Cuisine", label: "Cuisine", defaultValue: "Ethiopian Traditional" },
-                  { key: "WiFi", label: "WiFi", defaultValue: "" },
-                  { key: "Telegram", label: "Telegram", defaultValue: "@" },
+                  { key: "Phone", label: t("preset.phone"), defaultValue: "+251 9" },
+                  { key: "Location", label: t("preset.location"), defaultValue: "Bole, Addis Ababa" },
+                  { key: "Hours", label: t("preset.hours"), defaultValue: "08:00 AM - 10:00 PM" },
+                  { key: "Cuisine", label: t("preset.cuisine"), defaultValue: "Ethiopian Traditional" },
+                  { key: "WiFi", label: t("preset.wifi"), defaultValue: "" },
+                  { key: "Telegram", label: t("preset.telegram"), defaultValue: "@" },
                 ]}
               />
             </div>
@@ -1472,11 +1472,11 @@ export default function RestaurantOwnerPage({
               items={menuFormData.details}
               onChange={(details) => setMenuFormData((prev) => ({ ...prev, details }))}
               presets={[
-                { key: "Calories", label: "Calories", defaultValue: "450 kcal" },
-                { key: "Spice", label: "Spice", defaultValue: "Medium (መካከለኛ)" },
-                { key: "Fasting", label: "Fasting (የጾም)", defaultValue: "Yes" },
-                { key: "Portion", label: "Portion", defaultValue: "1 Person" },
-                { key: "Prep Time", label: "Prep Time", defaultValue: "15 mins" },
+                { key: "Calories", label: t("preset.calories"), defaultValue: "450 kcal" },
+                { key: "Spice", label: t("preset.spice"), defaultValue: "Medium (መካከለኛ)" },
+                { key: "Fasting", label: t("preset.fasting"), defaultValue: "Yes" },
+                { key: "Portion", label: t("preset.portion"), defaultValue: "1 Person" },
+                { key: "Prep Time", label: t("preset.prepTime"), defaultValue: "15 mins" },
               ]}
             />
           </div>

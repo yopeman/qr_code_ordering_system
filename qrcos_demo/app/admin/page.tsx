@@ -139,7 +139,7 @@ export default function AdminPage() {
     e.preventDefault();
     setLoginError("");
     if (!loginEmail.trim()) {
-      setLoginError("Please enter your admin email");
+      setLoginError(t("err.enterAdminEmail"));
       return;
     }
 
@@ -153,7 +153,7 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (!res.ok || !data.exists) {
-        setLoginError("No admin account found with this email");
+        setLoginError(t("err.noAdminFound"));
         return;
       }
 
@@ -163,7 +163,7 @@ export default function AdminPage() {
         setLoginStep("password");
       }
     } catch (err: any) {
-      setLoginError(err.message || "Failed to check email");
+      setLoginError(err.message || t("err.failedCheckEmail"));
     } finally {
       setLoginLoading(false);
     }
@@ -196,7 +196,7 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setLoginError(data.error || "Failed to set up password");
+        setLoginError(data.error || t("err.failedSetupPwd"));
         return;
       }
 
@@ -204,7 +204,7 @@ export default function AdminPage() {
       setAdminUser(data.admin);
       loadRestaurants();
     } catch (err: any) {
-      setLoginError(err.message || "Failed to setup password");
+      setLoginError(err.message || t("err.failedSetupPwd"));
     } finally {
       setLoginLoading(false);
     }
@@ -237,7 +237,7 @@ export default function AdminPage() {
           setLoginStep("setup");
           return;
         }
-        setLoginError(data.error || "Invalid credentials");
+        setLoginError(data.error || t("err.invalidCredentials"));
         return;
       }
 
@@ -245,7 +245,7 @@ export default function AdminPage() {
       setAdminUser(data.admin);
       loadRestaurants();
     } catch (err: any) {
-      setLoginError(err.message || "Login failed");
+      setLoginError(err.message || t("err.loginFailed"));
     } finally {
       setLoginLoading(false);
     }
@@ -290,7 +290,7 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setPwdMsg({ text: data.error || "Failed to update password", isError: true });
+        setPwdMsg({ text: data.error || t("err.failedUpdatePwd"), isError: true });
         return;
       }
 
@@ -303,7 +303,7 @@ export default function AdminPage() {
         setPwdMsg({ text: "", isError: false });
       }, 1500);
     } catch (err: any) {
-      setPwdMsg({ text: err.message || "Failed to change password", isError: true });
+      setPwdMsg({ text: err.message || t("err.failedChangePwd"), isError: true });
     } finally {
       setPwdLoading(false);
     }
@@ -323,12 +323,12 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (res.ok) {
-        alert(data.message || "Password reset successfully!");
+        alert(data.message || t("err.pwdResetSuccess"));
       } else {
-        alert(data.error || "Failed to reset password");
+        alert(data.error || t("err.failedResetPwd"));
       }
     } catch (err: any) {
-      alert(err.message || "Failed to reset password");
+      alert(err.message || t("err.failedResetPwd"));
     }
   };
 
@@ -345,10 +345,10 @@ export default function AdminPage() {
         loadRestaurants();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to delete");
+        alert(data.error || t("err.failedDelete"));
       }
     } catch (err: any) {
-      alert(err.message || "Delete error");
+      alert(err.message || t("err.deleteError"));
     }
   };
 
@@ -365,7 +365,7 @@ export default function AdminPage() {
     setRestError("");
 
     if (!formData.name.trim()) {
-      setRestError("Restaurant name is required");
+      setRestError(t("err.restNameRequired"));
       return;
     }
 
@@ -406,14 +406,14 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setRestError(data.error || "Failed to save restaurant");
+        setRestError(data.error || t("err.failedSaveRest"));
         return;
       }
 
       setRestModalOpen(false);
       loadRestaurants();
     } catch (err: any) {
-      setRestError(err.message || "Failed to save");
+      setRestError(err.message || t("err.failedSave"));
     } finally {
       setSavingRest(false);
     }
@@ -1177,11 +1177,11 @@ export default function AdminPage() {
               items={formData.detail}
               onChange={(detail) => setFormData((prev) => ({ ...prev, detail }))}
               presets={[
-                { key: "Phone", label: "Phone", defaultValue: "+251 9" },
-                { key: "Location", label: "Location", defaultValue: "Bole Medhanialem, Addis Ababa" },
-                { key: "Hours", label: "Hours", defaultValue: "08:00 AM - 10:00 PM" },
-                { key: "Cuisine", label: "Cuisine", defaultValue: "Ethiopian Traditional" },
-                { key: "WiFi", label: "WiFi", defaultValue: "" },
+                { key: "Phone", label: t("preset.phone"), defaultValue: "+251 9" },
+                { key: "Location", label: t("preset.location"), defaultValue: "Bole Medhanialem, Addis Ababa" },
+                { key: "Hours", label: t("preset.hours"), defaultValue: "08:00 AM - 10:00 PM" },
+                { key: "Cuisine", label: t("preset.cuisine"), defaultValue: "Ethiopian Traditional" },
+                { key: "WiFi", label: t("preset.wifi"), defaultValue: "" },
               ]}
             />
           </div>
