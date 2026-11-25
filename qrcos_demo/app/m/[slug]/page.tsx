@@ -25,6 +25,7 @@ import {
   Trash2,
   ReceiptText,
   ArrowRight,
+  Edit2,
 } from "lucide-react";
 
 interface MenuItem {
@@ -83,6 +84,8 @@ export default function DinerMenuPage({
   const [customerName, setCustomerName] = useState("");
   const [orderNotes, setOrderNotes] = useState("");
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   // Dish Lightbox Modal
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
@@ -296,7 +299,7 @@ export default function DinerMenuPage({
   const grandTotal = Number((subtotal + totalFees).toFixed(2));
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Submit Order
+  // Submit or Update Order
   const handlePlaceOrder = async () => {
     if (!access.isOperational) {
       alert(access.message || "This restaurant is currently not accepting orders.");
@@ -323,45 +326,157 @@ export default function DinerMenuPage({
         })),
       };
 
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const isEditing = Boolean(editingOrderId);
+      const res = await fetch(
+        isEditing ? `/api/orders/${editingOrderId}` : "/api/orders",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Failed to place order");
+        alert(data.error || (isEditing ? "Failed to update order" : "Failed to place order"));
         return;
       }
 
-      // Store in localStorage as required by spec:
-      // "can place order, and store order id to localStorage"
+      if (isEditing && editingOrderId) {
+        // Update localStorage entry with latest totalPrice & table
+        const existingSaved = JSON.parse(
+          localStorage.getItem("qrcos_customer_orders") || "[]"
+        );
+        const updatedSaved = existingSaved.map((o: any) =>
+          o.orderId === editingOrderId
+            ? {
+                ...o,
+                table,
+                totalPrice: data.order?.totalPrice ?? grandTotal,
+              }
+            : o
+        );
+        localStorage.setItem("qrcos_customer_orders", JSON.stringify(updatedSaved));
+        setRestaurantOrders(
+          updatedSaved.filter((o: any) => o.restaurantSlug === slug)
+        );
+        if (data.order) {
+          setLiveHistoryOrders((prev) => ({
+            ...prev,
+            [editingOrderId]: data.order,
+          }));
+          if (activeOrderId === editingOrderId) {
+            setActiveOrderData(data.order);
+          }
+        }
+        setEditingOrderId(null);
+      } else {
+        // Store in localStorage as required by spec:
+        // "can place order, and store order id to localStorage"
+        const existingSaved = JSON.parse(
+          localStorage.getItem("qrcos_customer_orders") || "[]"
+        );
+        const newSaved = [
+          {
+            orderId: data.orderId,
+            restaurantSlug: slug,
+            restaurantName: restaurant?.name || slug,
+            table,
+            totalPrice: grandTotal,
+            orderedAt: data.order?.orderedAt || new Date().toISOString(),
+          },
+          ...existingSaved,
+        ];
+        localStorage.setItem("qrcos_customer_orders", JSON.stringify(newSaved));
+        setActiveOrderId(data.orderId);
+        setActiveOrderData(data.order);
+      }
+
+      // Clear cart & close drawer
+      setCart([]);
+      setCartDrawerOpen(false);
+    } catch (err: any) {
+      alert(err.message || "Failed to submit order");
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
+  const handleStartEditOrder = (order: any) => {
+    if (!order || order.status !== "pending") return;
+
+    const mappedCart: CartItem[] = (order.details || []).map((it: any) => {
+      const matchedMenu = menus.find(
+        (m) => m._id === it.menuId || m.name === it.name
+      );
+      return {
+        menu: matchedMenu || {
+          _id: String(it.menuId || it.name),
+          category: "Menu",
+          name: it.name,
+          description: "",
+          price: it.unitPrice,
+          detail: [],
+          imgUrls: [],
+          visibility: "public",
+        },
+        quantity: it.quantity || 1,
+      };
+    });
+
+    setCart(mappedCart);
+    setCustomerName(order.customerName && order.customerName !== "Guest" ? order.customerName : "");
+    setOrderNotes(order.notes || "");
+    if (order.table) setTable(order.table);
+    setEditingOrderId(order._id);
+    setHistoryModalOpen(false);
+    setCartDrawerOpen(true);
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm("Are you sure you want to cancel and delete this pending order?")) {
+      return;
+    }
+
+    setCancellingOrderId(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to cancel order");
+        return;
+      }
+
       const existingSaved = JSON.parse(
         localStorage.getItem("qrcos_customer_orders") || "[]"
       );
-      const newSaved = [
-        {
-          orderId: data.orderId,
-          restaurantSlug: slug,
-          restaurantName: restaurant?.name || slug,
-          table,
-          totalPrice: grandTotal,
-          orderedAt: data.order?.orderedAt || new Date().toISOString(),
-        },
-        ...existingSaved,
-      ];
-      localStorage.setItem("qrcos_customer_orders", JSON.stringify(newSaved));
+      const filteredSaved = existingSaved.filter(
+        (o: any) => o.orderId !== orderId
+      );
+      localStorage.setItem("qrcos_customer_orders", JSON.stringify(filteredSaved));
 
-      // Clear cart & switch to active order tracking
-      setCart([]);
-      setCartDrawerOpen(false);
-      setActiveOrderId(data.orderId);
-      setActiveOrderData(data.order);
+      setRestaurantOrders((prev) => prev.filter((o) => o.orderId !== orderId));
+      setLiveHistoryOrders((prev) => {
+        const next = { ...prev };
+        delete next[orderId];
+        return next;
+      });
+
+      if (activeOrderId === orderId) {
+        setActiveOrderId(null);
+        setActiveOrderData(null);
+      }
+      if (editingOrderId === orderId) {
+        setEditingOrderId(null);
+        setCart([]);
+        setCartDrawerOpen(false);
+      }
     } catch (err: any) {
-      alert(err.message || "Failed to place order");
+      alert(err.message || "Failed to cancel order");
     } finally {
-      setPlacingOrder(false);
+      setCancellingOrderId(null);
     }
   };
 
@@ -536,16 +651,45 @@ export default function DinerMenuPage({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setActiveOrderId(null);
-                setActiveOrderData(null);
-              }}
-              className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition cursor-pointer"
-            >
-              Dismiss
-            </button>
+            <div className="flex items-center gap-2">
+              {activeOrderData.status === "pending" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleStartEditOrder(activeOrderData)}
+                    className="text-xs bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg transition cursor-pointer inline-flex items-center gap-1"
+                    title="Edit pending order"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cancellingOrderId === activeOrderData._id}
+                    onClick={() => handleCancelOrder(activeOrderData._id)}
+                    className="text-xs bg-rose-500/80 hover:bg-rose-500 px-2.5 py-1.5 rounded-lg transition cursor-pointer inline-flex items-center gap-1 disabled:opacity-50"
+                    title="Cancel pending order"
+                  >
+                    {cancellingOrderId === activeOrderData._id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>Cancel</span>
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveOrderId(null);
+                  setActiveOrderData(null);
+                }}
+                className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
 
           {/* Stepper Progress */}
@@ -762,7 +906,11 @@ export default function DinerMenuPage({
       <Modal
         isOpen={cartDrawerOpen}
         onClose={() => setCartDrawerOpen(false)}
-        title={`Your Basket — Table ${table}`}
+        title={
+          editingOrderId
+            ? `Edit Order — Table ${table}`
+            : `Your Basket — Table ${table}`
+        }
         maxWidth="max-w-lg"
       >
         <div className="space-y-5">
@@ -873,25 +1021,42 @@ export default function DinerMenuPage({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={handlePlaceOrder}
-            disabled={!access.isOperational || placingOrder || cart.length === 0}
-            className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-xl shadow-orange-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {placingOrder ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Dispatching to Kitchen...
-              </>
-            ) : !access.isOperational ? (
-              "Ordering Unavailable"
-            ) : (
-              <>
-                Confirm & Place Order ({grandTotal.toFixed(2)} ETB)
-              </>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handlePlaceOrder}
+              disabled={!access.isOperational || placingOrder || cart.length === 0}
+              className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-xl shadow-orange-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {placingOrder ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {editingOrderId ? "Saving Changes..." : "Dispatching to Kitchen..."}
+                </>
+              ) : !access.isOperational ? (
+                "Ordering Unavailable"
+              ) : editingOrderId ? (
+                <>Save Order Changes ({grandTotal.toFixed(2)} ETB)</>
+              ) : (
+                <>Confirm & Place Order ({grandTotal.toFixed(2)} ETB)</>
+              )}
+            </button>
+
+            {editingOrderId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingOrderId(null);
+                  setCart([]);
+                  setOrderNotes("");
+                  setCartDrawerOpen(false);
+                }}
+                className="w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs transition"
+              >
+                Cancel Editing
+              </button>
             )}
-          </button>
+          </div>
         </div>
       </Modal>
 
@@ -1070,22 +1235,50 @@ export default function DinerMenuPage({
                       </div>
                     )}
 
-                    <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+                    <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2">
                       <span className="text-xs font-extrabold font-mono text-slate-900 dark:text-white">
                         Total: {Number(total).toFixed(2)} ETB
                       </span>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveOrderId(ref.orderId);
-                          if (live) setActiveOrderData(live);
-                          setHistoryModalOpen(false);
-                        }}
-                        className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline cursor-pointer"
-                      >
-                        Track Live
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {status === "pending" && live && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditOrder(live)}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-orange-400 cursor-pointer"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={cancellingOrderId === ref.orderId}
+                              onClick={() => handleCancelOrder(ref.orderId)}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 cursor-pointer disabled:opacity-50"
+                            >
+                              {cancellingOrderId === ref.orderId ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3 h-3" />
+                              )}
+                              <span>Cancel</span>
+                            </button>
+                          </>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveOrderId(ref.orderId);
+                            if (live) setActiveOrderData(live);
+                            setHistoryModalOpen(false);
+                          }}
+                          className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline cursor-pointer"
+                        >
+                          Track Live
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

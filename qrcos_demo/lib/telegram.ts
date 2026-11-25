@@ -220,3 +220,51 @@ export async function sendTelegramTestMessage(
     };
   }
 }
+
+/**
+ * Deletes a Telegram order message when a pending order is cancelled,
+ * falling back to editing the message if Telegram refuses deletion.
+ */
+export async function deleteTelegramMessage(
+  chatId: string | number,
+  messageId: number
+): Promise<boolean> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token || !chatId || !messageId) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+      }),
+      cache: "no-store",
+    });
+
+    const data = await response.json();
+    if (response.ok && data.ok) {
+      return true;
+    }
+
+    // Fallback: mark the message as cancelled if deletion fails
+    await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        text: "❌ <b>ORDER CANCELLED BY GUEST</b>",
+        parse_mode: "HTML",
+      }),
+      cache: "no-store",
+    });
+    return false;
+  } catch (err) {
+    console.error("Failed to delete Telegram message:", err);
+    return false;
+  }
+}
