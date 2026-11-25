@@ -22,6 +22,7 @@ import {
   Loader2,
   Sparkles,
   Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 
 interface MenuItem {
@@ -191,6 +192,10 @@ export default function DinerMenuPage({
         })
         .filter(Boolean) as CartItem[];
     });
+  };
+
+  const removeFromCart = (menuId: string) => {
+    setCart((prev) => prev.filter((item) => item.menu._id !== menuId));
   };
 
   const getItemQuantityInCart = (menuId: string): number => {
@@ -717,6 +722,16 @@ export default function DinerMenuPage({
                 <span className="font-bold text-sm font-mono text-slate-900 dark:text-white min-w-16 text-right whitespace-nowrap">
                   {(item.menu.price * item.quantity).toFixed(2)} ETB
                 </span>
+
+                <button
+                  type="button"
+                  onClick={() => removeFromCart(item.menu._id)}
+                  aria-label="Remove dish"
+                  title="Remove dish"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
@@ -740,12 +755,12 @@ export default function DinerMenuPage({
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
                 Special Kitchen Instructions / Allergies
               </label>
-              <input
-                type="text"
+              <textarea
+                rows={3}
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
                 placeholder="e.g. Extra karia, less spicy, well done (ቃሪያ በጎን)"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-base sm:text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
               />
             </div>
           </div>
