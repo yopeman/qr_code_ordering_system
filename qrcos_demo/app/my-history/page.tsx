@@ -112,7 +112,7 @@ export default function MyHistoryPage() {
                 My Order History
               </h1>
               <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                Saved in localStorage
+                Saved
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -121,7 +121,7 @@ export default function MyHistoryPage() {
           </div>
         </div>
 
-        {savedRefs.length > 0 && (
+        {/* {savedRefs.length > 0 && (
           <button
             type="button"
             onClick={handleClearHistory}
@@ -130,7 +130,7 @@ export default function MyHistoryPage() {
             <Trash2 className="w-4 h-4" />
             Clear History
           </button>
-        )}
+        )} */}
       </div>
 
       {loading ? (
@@ -153,10 +153,10 @@ export default function MyHistoryPage() {
           <div className="pt-2">
             <Link
               href="#"
+              onClick={() => window.history.back()}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-md transition"
             >
               Try Ordering
-              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>

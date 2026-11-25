@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Modal } from "@/components/Modal";
 import { DishImageGallery } from "@/components/DishImageGallery";
-import { checkRestaurantAccess } from "@/lib/utils";
+import { checkRestaurantAccess, formatOrderDateTime } from "@/lib/utils";
 import {
   UtensilsCrossed,
   ShoppingBag,
@@ -23,6 +23,8 @@ import {
   Sparkles,
   Image as ImageIcon,
   Trash2,
+  ReceiptText,
+  ArrowRight,
 } from "lucide-react";
 
 interface MenuItem {
@@ -93,6 +95,12 @@ export default function DinerMenuPage({
   const [activeOrderData, setActiveOrderData] = useState<any>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Restaurant-Specific Order History Modal
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [restaurantOrders, setRestaurantOrders] = useState<any[]>([]);
+  const [liveHistoryOrders, setLiveHistoryOrders] = useState<Record<string, any>>({});
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   useEffect(() => {
     loadData();
     if (!queryTable) {
@@ -104,6 +112,7 @@ export default function DinerMenuPage({
   useEffect(() => {
     if (!activeOrderId) {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      setActiveOrderData(null);
       return;
     }
 
@@ -161,6 +170,64 @@ export default function DinerMenuPage({
       setTableModalOpen(false);
     }
   };
+
+  const openHistoryModal = () => {
+    setHistoryModalOpen(true);
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem("qrcos_customer_orders") || "[]"
+      );
+      const filtered = Array.isArray(stored)
+        ? stored.filter((o: any) => o.restaurantSlug === slug)
+        : [];
+      setRestaurantOrders(filtered);
+      setLoadingHistory(filtered.length > 0);
+    } catch (err) {
+      console.error("Failed to load restaurant order history:", err);
+      setRestaurantOrders([]);
+      setLoadingHistory(false);
+    }
+  };
+
+  // Live 1-second polling for orders shown in the restaurant order history modal
+  useEffect(() => {
+    if (!historyModalOpen || restaurantOrders.length === 0) return;
+
+    let cancelled = false;
+
+    const fetchHistoryStatuses = async () => {
+      const updates: Record<string, any> = {};
+      await Promise.all(
+        restaurantOrders.map(async (ref: any) => {
+          try {
+            const res = await fetch(`/api/orders/${ref.orderId}`, {
+              cache: "no-store",
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.order) {
+                updates[ref.orderId] = data.order;
+              }
+            }
+          } catch (err) {
+            console.error("Failed to fetch order status:", err);
+          }
+        })
+      );
+      if (!cancelled) {
+        setLiveHistoryOrders((prev) => ({ ...prev, ...updates }));
+        setLoadingHistory(false);
+      }
+    };
+
+    fetchHistoryStatuses();
+    const timer = setInterval(fetchHistoryStatuses, 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [historyModalOpen, restaurantOrders]);
 
   const addToCart = (menu: MenuItem) => {
     if (!access.isOperational) {
@@ -399,6 +466,16 @@ export default function DinerMenuPage({
             >
               <History className="w-5 h-5" />
             </Link>
+
+            <button
+              type="button"
+              onClick={openHistoryModal}
+              className="p-2 rounded-xl text-slate-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-slate-800 transition cursor-pointer"
+              title={`View orders at ${restaurant.name}`}
+              aria-label={`View orders at ${restaurant.name}`}
+            >
+              <ReceiptText className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -461,8 +538,11 @@ export default function DinerMenuPage({
 
             <button
               type="button"
-              onClick={() => setActiveOrderId(null)}
-              className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition"
+              onClick={() => {
+                setActiveOrderId(null);
+                setActiveOrderData(null);
+              }}
+              className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition cursor-pointer"
             >
               Dismiss
             </button>
@@ -908,6 +988,123 @@ export default function DinerMenuPage({
             Confirm Table
           </button>
         </form>
+      </Modal>
+
+      {/* MODAL: Restaurant-Specific Order History */}
+      <Modal
+        isOpen={historyModalOpen}
+        onClose={() => setHistoryModalOpen(false)}
+        title={`Your Orders — ${restaurant.name}`}
+        maxWidth="max-w-lg"
+      >
+        <div className="space-y-4">
+          {loadingHistory ? (
+            <div className="py-12 flex justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-orange-600" />
+            </div>
+          ) : restaurantOrders.length === 0 ? (
+            <div className="py-10 text-center space-y-2">
+              <ShoppingBag className="w-9 h-9 mx-auto text-slate-300 dark:text-slate-600" />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                No orders at {restaurant.name} yet
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Orders you place here will appear in this list with live status updates.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+              {restaurantOrders.map((ref) => {
+                const live = liveHistoryOrders[ref.orderId];
+                const status = live?.status || "pending";
+                const items = live?.details || [];
+                const total = live?.totalPrice ?? ref.totalPrice;
+
+                return (
+                  <div
+                    key={ref.orderId}
+                    className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          Table {live?.table || ref.table}
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {formatOrderDateTime(live?.orderedAt || ref.orderedAt)}
+                        </span>
+                      </div>
+
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                          status === "completed"
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                            : status === "preparing"
+                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                              : "bg-orange-500/15 text-orange-700 dark:text-orange-400"
+                        }`}
+                      >
+                        {status === "completed" ? (
+                          <CheckCircle2 className="w-3 h-3" />
+                        ) : status === "preparing" ? (
+                          <ChefHat className="w-3 h-3" />
+                        ) : (
+                          <Clock className="w-3 h-3" />
+                        )}
+                        <span className="capitalize">{status}</span>
+                      </span>
+                    </div>
+
+                    {items.length > 0 && (
+                      <div className="text-xs text-slate-600 dark:text-slate-300 space-y-0.5">
+                        {items.map((it: any, idx: number) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>
+                              {it.quantity}× {it.name}
+                            </span>
+                            <span className="font-mono text-slate-500">
+                              {Number(it.subtotalPrice ?? it.unitPrice * it.quantity).toFixed(2)} ETB
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+                      <span className="text-xs font-extrabold font-mono text-slate-900 dark:text-white">
+                        Total: {Number(total).toFixed(2)} ETB
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveOrderId(ref.orderId);
+                          if (live) setActiveOrderData(live);
+                          setHistoryModalOpen(false);
+                        }}
+                        className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline cursor-pointer"
+                      >
+                        Track Live
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Link to full order history page */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            <Link
+              href="/my-history"
+              onClick={() => setHistoryModalOpen(false)}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400 transition"
+            >
+              <span>View All Order History</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
       </Modal>
     </div>
   );
