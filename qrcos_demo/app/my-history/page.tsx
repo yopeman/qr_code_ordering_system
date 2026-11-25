@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Loader2,
   RefreshCw,
+  Edit2,
 } from "lucide-react";
 
 interface SavedOrderRef {
@@ -42,6 +43,7 @@ export default function MyHistoryPage() {
   const [savedRefs, setSavedRefs] = useState<SavedOrderRef[]>([]);
   const [liveOrders, setLiveOrders] = useState<Record<string, OrderLiveState>>({});
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -67,7 +69,9 @@ export default function MyHistoryPage() {
       await Promise.all(
         savedRefs.map(async (ref) => {
           try {
-            const res = await fetch(`/api/orders/${ref.orderId}`);
+            const res = await fetch(`/api/orders/${ref.orderId}`, {
+              cache: "no-store",
+            });
             if (res.ok) {
               const data = await res.json();
               if (data.order) {
@@ -95,6 +99,37 @@ export default function MyHistoryPage() {
       localStorage.removeItem("qrcos_customer_orders");
       setSavedRefs([]);
       setLiveOrders({});
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm("Are you sure you want to cancel and delete this pending order?")) {
+      return;
+    }
+
+    setCancellingId(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to cancel order");
+        return;
+      }
+
+      const updatedRefs = savedRefs.filter((r) => r.orderId !== orderId);
+      localStorage.setItem("qrcos_customer_orders", JSON.stringify(updatedRefs));
+      setSavedRefs(updatedRefs);
+      setLiveOrders((prev) => {
+        const next = { ...prev };
+        delete next[orderId];
+        return next;
+      });
+    } catch (err: any) {
+      alert(err.message || "Failed to cancel order");
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -267,7 +302,7 @@ export default function MyHistoryPage() {
                 )}
 
                 {/* Total & Action */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                   <div className="text-xs">
                     <span className="text-slate-400 mr-2">Grand Total:</span>
                     <span className="font-extrabold text-sm font-mono text-orange-600">
@@ -275,12 +310,39 @@ export default function MyHistoryPage() {
                     </span>
                   </div>
 
-                  <Link
-                    href={`/m/${ref.restaurantSlug}?table=${ref.table}`}
-                    className="flex items-center gap-1 text-xs font-semibold text-orange-600 hover:underline"
-                  >
-                    Reorder from Menu <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    {currentStatus === "pending" && live && (
+                      <>
+                        <Link
+                          href={`/m/${ref.restaurantSlug}?table=${encodeURIComponent(live.table || ref.table)}&editOrder=${ref.orderId}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-slate-700 dark:text-slate-200 hover:text-orange-600 text-xs font-semibold transition"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={cancellingId === ref.orderId}
+                          onClick={() => handleCancelOrder(ref.orderId)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-rose-600 dark:text-rose-400 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                        >
+                          {cancellingId === ref.orderId ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                          <span>Cancel</span>
+                        </button>
+                      </>
+                    )}
+
+                    <Link
+                      href={`/m/${ref.restaurantSlug}?table=${ref.table}`}
+                      className="flex items-center gap-1 text-xs font-semibold text-orange-600 hover:underline"
+                    >
+                      Reorder from Menu <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             );

@@ -66,6 +66,8 @@ export default function DinerMenuPage({
 
   // Table number from URL query ?table=12
   const queryTable = searchParams.get("table") || "";
+  const queryEditOrder = searchParams.get("editOrder") || "";
+  const handledEditOrderRef = useRef<string | null>(null);
   const [table, setTable] = useState(queryTable);
   const [tableModalOpen, setTableModalOpen] = useState(false);
   const [tableInput, setTableInput] = useState(queryTable || "1");
@@ -110,6 +112,33 @@ export default function DinerMenuPage({
       setTableModalOpen(true);
     }
   }, [slug, queryTable]);
+
+  // Open edit mode automatically when navigated from /my-history?editOrder=<id>
+  useEffect(() => {
+    if (loading || !queryEditOrder || handledEditOrderRef.current === queryEditOrder) {
+      return;
+    }
+    handledEditOrderRef.current = queryEditOrder;
+
+    const loadOrderForEdit = async () => {
+      try {
+        const res = await fetch(`/api/orders/${queryEditOrder}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.order && data.order.status === "pending") {
+          handleStartEditOrder(data.order);
+        } else if (data.order) {
+          alert("Only pending orders can be edited.");
+        }
+      } catch (err) {
+        console.error("Failed to load order for editing:", err);
+      }
+    };
+
+    loadOrderForEdit();
+  }, [loading, queryEditOrder]);
 
   // Regular 1-second polling when an order is active
   useEffect(() => {
