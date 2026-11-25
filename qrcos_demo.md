@@ -96,7 +96,7 @@ A modern, multi-tenant QR code ordering platform with Next.js, Tailwind CSS, Mon
 
 4. **Public Diner Menu (`/m/[slug]`)**:
    - Completely public, zero authentication required.
-   - Extracts table number from URL query `?table=12`. Prompts diner to enter table number if missing.
+   - Extracts table number from URL query `?table=1`. Prompts diner to enter table number if missing.
    - Live category navigation, search, modal dish viewer with multiple photos and nutrition/spice details.
    - Interactive cart drawer, order note, instant order submission.
    - Stores placed order ID in diner's `localStorage` (`qrcos_customer_orders`).

@@ -744,7 +744,7 @@ export default function RestaurantOwnerPage({
               <span>Owner Dashboard</span>
               <span>•</span>
               <a
-                href={`/m/${slug}?table=12`}
+                href={`/m/${slug}?table=1`}
                 target="_blank"
                 rel="noreferrer"
                 className="text-orange-600 hover:underline flex items-center gap-1 font-mono"
